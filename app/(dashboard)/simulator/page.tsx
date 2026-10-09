@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/dashboard/Panel";
-import { PageHeader, SampleDataBanner, Tag } from "@/components/dashboard/ui";
+import { PageHeader, Tag } from "@/components/dashboard/ui";
 import { ImpactSimulator } from "@/components/simulator/ImpactSimulator";
 import { getSimulatorBaseline } from "@/lib/data/simulator";
 
@@ -21,10 +21,5 @@ export default function SimulatorPage() {
 
 async function SimulatorContent() {
   const baseline = await getSimulatorBaseline();
-  return (
-    <>
-      <SampleDataBanner source={baseline.meta.source} />
-      <ImpactSimulator baseline={baseline} />
-    </>
-  );
+  return <ImpactSimulator baseline={baseline} />;
 }

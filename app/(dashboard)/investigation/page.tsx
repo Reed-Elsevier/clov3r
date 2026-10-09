@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { PageSkeleton } from "@/components/dashboard/Panel";
-import { PageHeader, SampleDataBanner } from "@/components/dashboard/ui";
+import { PageHeader } from "@/components/dashboard/ui";
 import { AnomalyExplorer } from "@/components/investigation/AnomalyExplorer";
-import { anomaliesSource, listAnomalies } from "@/lib/data/anomalies";
+import { listAnomalies } from "@/lib/data/anomalies";
 
 export default function InvestigationPage({ searchParams }: PageProps<"/investigation">) {
   return (
@@ -19,10 +19,5 @@ async function InvestigationContent({ searchParams }: { searchParams: PageProps<
   const { q } = await searchParams;
   const initialQuery = typeof q === "string" ? q.slice(0, 100) : "";
   const rows = await listAnomalies();
-  return (
-    <>
-      <SampleDataBanner source={anomaliesSource} />
-      <AnomalyExplorer key={initialQuery} initialRows={rows} initialQuery={initialQuery} />
-    </>
-  );
+  return <AnomalyExplorer key={initialQuery} initialRows={rows} initialQuery={initialQuery} />;
 }

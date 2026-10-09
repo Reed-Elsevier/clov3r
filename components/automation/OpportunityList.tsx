@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Tag } from "@/components/dashboard/ui";
 import { CONFIDENCE_SAMPLE_SIZE, SCORE_WEIGHTS } from "@/lib/automation/score";
 import { formatInt, formatUsdCompact } from "@/lib/format";
 import type { AutomationOpportunity, ScoreBreakdown } from "@/lib/types/dashboard";
@@ -80,14 +79,6 @@ export function OpportunityList({ opportunities }: { opportunities: AutomationOp
                   <span className="w-12 text-right tabular-nums text-gray-700">×{SCORE_WEIGHTS[k]}</span>
                 </div>
               ))}
-            </div>
-
-            <div className="rounded-xl bg-brand-100 p-3 text-sm text-gray-900">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-brand-600">Success criterion</span>
-                <Tag tone="projected">Estimate</Tag>
-              </div>
-              {o.successCriterion}
             </div>
           </li>
         ))}

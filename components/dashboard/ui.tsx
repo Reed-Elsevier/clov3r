@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { AnomalyPriority, AnomalyStatus, DataSource } from "@/lib/types/dashboard";
+import type { AnomalyPriority, AnomalyStatus } from "@/lib/types/dashboard";
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: ReactNode }) {
   return (
@@ -29,15 +29,6 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 
 export const darkPillClass =
   "rounded-full bg-gray-900 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600";
-
-export function SampleDataBanner({ source }: { source: DataSource }) {
-  if (source !== "mock") return null;
-  return (
-    <p className="w-fit rounded-full bg-warning/15 px-3 py-1 text-xs font-medium text-gray-700">
-      Showing sample data — live metrics will appear once the data pipeline is connected.
-    </p>
-  );
-}
 
 const PRIORITY_STYLE: Record<AnomalyPriority, string> = {
   High: "bg-danger/10 text-danger",

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { EmptyState, PageSkeleton, Panel } from "@/components/dashboard/Panel";
-import { PageHeader, SampleDataBanner, Tag } from "@/components/dashboard/ui";
+import { PageHeader, Tag } from "@/components/dashboard/ui";
 import { DelayTrendChart, DepartmentExceptionsChart, ReviewTimeChart } from "@/components/workflow/charts";
 import { getWorkflowInsights } from "@/lib/data/workflow";
 import { formatInt, formatPct } from "@/lib/format";
@@ -18,15 +18,13 @@ export default function WorkflowPage() {
 }
 
 async function WorkflowContent() {
-  const { meta, byDepartment, bySupplier, reviewTimeByType, delayTrend } = await getWorkflowInsights();
+  const { byDepartment, bySupplier, reviewTimeByType, delayTrend } = await getWorkflowInsights();
   const slowest = [...reviewTimeByType].sort((a, b) => b.totalHours - a.totalHours)[0];
   const worstDept = [...byDepartment].sort((a, b) => b.exceptionRate - a.exceptionRate)[0];
   const worstSupplier = [...bySupplier].sort((a, b) => b.exceptionRate - a.exceptionRate)[0];
 
   return (
     <>
-      <SampleDataBanner source={meta.source} />
-
       <div className="grid gap-4 md:grid-cols-3">
         {worstDept && (
           <Insight label="Highest exception rate" value={worstDept.departmentName} detail={`${formatPct(worstDept.exceptionRate)} of invoices vs 19.5% baseline`} />

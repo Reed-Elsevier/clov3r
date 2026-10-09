@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState, Panel } from "@/components/dashboard/Panel";
-import { darkPillClass, PageHeader, SampleDataBanner } from "@/components/dashboard/ui";
+import { darkPillClass, PageHeader } from "@/components/dashboard/ui";
 import { FlaggedValueCard } from "@/components/overview/FlaggedValueCard";
 import { KpiCard } from "@/components/overview/KpiCard";
 import { DepartmentTable } from "@/components/overview/DepartmentTable";
@@ -32,13 +32,11 @@ export default function OverviewPage() {
 }
 
 async function OverviewContent() {
-  const { meta, kpis, anomaliesOverTime, categoryDistribution, flaggedValueByDepartment, amountDistribution } =
+  const { kpis, anomaliesOverTime, categoryDistribution, flaggedValueByDepartment, amountDistribution } =
     await getOverviewData();
 
   return (
     <>
-      <SampleDataBanner source={meta.source} />
-
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard dark label="Total invoices analyzed" metric={kpis.totalInvoices} format={formatInt} />
         <KpiCard label="Anomalies detected" metric={kpis.anomaliesDetected} format={formatInt} lowerIsBetter />

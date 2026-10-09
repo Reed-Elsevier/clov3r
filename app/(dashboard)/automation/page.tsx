@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { EmptyState, PageSkeleton } from "@/components/dashboard/Panel";
-import { PageHeader, SampleDataBanner } from "@/components/dashboard/ui";
+import { PageHeader } from "@/components/dashboard/ui";
 import { OpportunityList } from "@/components/automation/OpportunityList";
 import { getAutomationOpportunities } from "@/lib/data/automation";
 
@@ -16,10 +16,9 @@ export default function AutomationPage() {
 }
 
 async function AutomationContent() {
-  const { meta, opportunities } = await getAutomationOpportunities();
+  const { opportunities } = await getAutomationOpportunities();
   return (
     <>
-      <SampleDataBanner source={meta.source} />
       {opportunities.length ? <OpportunityList opportunities={opportunities} /> : <EmptyState />}
     </>
   );

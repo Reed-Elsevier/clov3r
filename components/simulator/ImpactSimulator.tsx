@@ -8,10 +8,22 @@ import { formatInt, formatPct, formatUsd } from "@/lib/format";
 import { projectImpact } from "@/lib/simulator/project";
 import type { ProjectedValue, SimulatorAssumptions, SimulatorBaseline } from "@/lib/types/dashboard";
 
-const SLIDERS: { key: keyof SimulatorAssumptions; label: string }[] = [
-  { key: "automatedValidationPct", label: "What if automated validation prevents X% of missing-field errors?" },
-  { key: "processingTimeReductionPct", label: "What if processing time decreases by X%?" },
-  { key: "manualReviewReductionPct", label: "What if manual reviews drop by X% for invoices passing all checks?" },
+const SLIDERS: { key: keyof SimulatorAssumptions; label: string; hint: string }[] = [
+  {
+    key: "automatedValidationPct",
+    label: "Catch missing details automatically",
+    hint: "Share of invoices with missing info (like a PO number) the system catches before a person has to.",
+  },
+  {
+    key: "processingTimeReductionPct",
+    label: "Process invoices faster",
+    hint: "How much quicker invoices go from received to paid.",
+  },
+  {
+    key: "manualReviewReductionPct",
+    label: "Fewer manual checks",
+    hint: "Share of clean invoices that no longer need a person to check them.",
+  },
 ];
 
 export function ImpactSimulator({ baseline }: { baseline: SimulatorBaseline }) {
@@ -32,7 +44,10 @@ export function ImpactSimulator({ baseline }: { baseline: SimulatorBaseline }) {
       <section className="grid gap-4 rounded-2xl bg-white p-5 shadow-sm lg:grid-cols-3">
         {SLIDERS.map((s) => (
           <label key={s.key} className="flex flex-col gap-2 text-sm text-gray-700">
-            <span className="min-h-10">{s.label}</span>
+            <span>
+              <span className="block font-semibold text-gray-900">{s.label}</span>
+              <span className="mt-0.5 block min-h-8 text-xs text-gray-500">{s.hint}</span>
+            </span>
             <div className="flex items-center gap-3">
               <input
                 type="range"
