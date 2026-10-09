@@ -11,9 +11,13 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "data:load": "tsx scripts/load-dataset/load-curated.ts",
+    "data:clean-raw": "tsx scripts/load-dataset/clean-raw.ts",
+    "test": "tsx --test scripts/load-dataset/lib/normalize.test.ts scripts/load-dataset/lib/convert.test.ts"
   },
   "dependencies": {
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.6",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.0",
@@ -32,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
