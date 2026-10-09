@@ -5,6 +5,8 @@
 import { z } from "zod";
 
 import { anomalyExplanationSchema, anomalySchema } from "./anomalies";
+import { idSchema, isoDateSchema, timestampSchema } from "./common";
+import { INVOICE_STATUSES } from "./enums";
 import { invoiceSchema, supplierSchema } from "./finance";
 
 export const paginationQuerySchema = z.object({
@@ -55,3 +57,49 @@ export const anomalyDetailSchema = z.object({
   explanation: anomalyExplanationSchema.nullable(),
 });
 export type AnomalyDetail = z.infer<typeof anomalyDetailSchema>;
+
+/** Query string for `GET /api/invoices` (all filters optional, combined with AND). */
+export const invoiceListQuerySchema = paginationQuerySchema.extend({
+  supplier_id: idSchema.optional(),
+  status: z.enum(INVOICE_STATUSES).optional(),
+  /** Matches invoices with at least one line on this cost center. */
+  cost_center_id: idSchema.optional(),
+  /** Inclusive `invoice_date` range. */
+  from: isoDateSchema.optional(),
+  to: isoDateSchema.optional(),
+});
+export type InvoiceListQuery = z.infer<typeof invoiceListQuerySchema>;
+
+export const invoiceListResponseSchema = paginatedSchema(invoiceSchema);
+export type InvoiceListResponse = z.infer<typeof invoiceListResponseSchema>;
+
+/** Published Track 6 baselines (dataset/_docs/05_hackathon_package.md). */
+export const PUBLISHED_BASELINES = {
+  exception_rate_pct: 19.5,
+  invoices_without_po_pct: 6.1,
+} as const;
+
+/** Headline KPIs (`GET /api/metrics`). Percentages are 0–100. */
+export const metricsResponseSchema = z.object({
+  total_invoices: z.number().int().min(0),
+  /** Invoices with at least one `invoice_exceptions` row. */
+  invoices_with_exceptions: z.number().int().min(0),
+  exception_rate_pct: z.number().min(0).max(100),
+  invoices_without_po: z.number().int().min(0),
+  invoices_without_po_pct: z.number().min(0).max(100),
+  /** Exceptions with `resolved_at` still null. */
+  open_exceptions: z.number().int().min(0),
+  /** Mean days from `received_at` to first payment, over paid invoices; null if none paid. */
+  avg_processing_days: z.number().nullable(),
+  /** Detected anomalies (all statuses). */
+  anomalies_detected: z.number().int().min(0),
+  high_priority_anomalies: z.number().int().min(0),
+  /** Sum of `amount_usd` over distinct invoices with an open anomaly — NOT confirmed loss or savings. */
+  flagged_value_usd: z.number().min(0),
+  baselines: z.object({
+    exception_rate_pct: z.number(),
+    invoices_without_po_pct: z.number(),
+  }),
+  generated_at: timestampSchema,
+});
+export type MetricsResponse = z.infer<typeof metricsResponseSchema>;

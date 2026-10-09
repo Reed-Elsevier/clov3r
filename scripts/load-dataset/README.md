@@ -1,8 +1,32 @@
 # scripts/load-dataset
 
-> **Stub** — created by `feat/data-schema-contract`; the loaders are
-> implemented in `feat/ingestion-api` (see
-> [PLAN-02](../../docs/PLAN-02-ingestion-api.md)).
+Offline CLI loaders for the REPH dataset ([PLAN-02](../../docs/PLAN-02-ingestion-api.md)).
+They are **not** part of the Next.js request path.
+
+| Command | What it does |
+|---|---|
+| `npm run data:load` | Upserts the 9 curated `G_finance` CSVs into Postgres (FK-safe order, idempotent). Add `-- --tables suppliers,invoices` to load a subset. |
+| `npm run data:clean-raw` | Cleans `raw/suppliers_raw.csv` + `raw/invoices_raw.csv` and writes `scripts/load-dataset/out/data-quality-report.json` (dry run, no DB needed). |
+| `npm run data:clean-raw -- --write` | Same, and upserts the rows that passed every check into `suppliers`/`invoices`. |
+| `npm test` | Unit tests for date normalisation, dedupe, enum/typo matching and CSV conversions. |
+
+Both loaders accept `-- --dataset <dir>` (or `DATASET_DIR`) if the dataset isn't at `./dataset`.
+Every row is validated against the shared Zod schema before insert; rejected rows are listed
+and the command exits non-zero. The curated loader prints loaded vs. expected row counts.
+
+### Raw cleaning rules (`clean-raw.ts`)
+
+| Rule | Action | Report key |
+|---|---|---|
+| Mixed date formats (ISO / `DD-MM-YYYY` / `Mon DD, YYYY`) | Normalised | `fixes.date_format_normalized:<col>` |
+| Leading/trailing/double whitespace | Trimmed | `fixes.whitespace_trimmed:<col>` |
+| Categorical casing (`email` -> `Email`) | Fixed | `fixes.casing_fixed:<col>` |
+| Categorical typo within 2 edits, unambiguous | Fixed | `fixes.typo_fixed:<col>` |
+| Thousands separators in numbers | Normalised | `fixes.number_format_normalized:<col>` |
+| Near-duplicate rows (same PK after trim) | Dropped, earliest `_ingested_at` kept | `duplicates_dropped` |
+| Blank required field (`currency`, `invoice_date`, `category`, …) | **Flagged**, not guessed | `flags.blank_required:<col>` |
+| `supplier_id` not in curated or cleaned suppliers | **Flagged**, not inserted | `flags.orphaned_supplier_id` |
+| Unparseable date / unknown category / other schema failure | **Flagged** | `flags.*` |
 
 ## Data source
 
