@@ -1,40 +1,41 @@
 import type { NextRequest } from "next/server";
 import { listAnomalies } from "@/lib/data/anomalies";
 import {
-  ANOMALY_PRIORITIES,
-  ANOMALY_STATUSES,
-  type AnomalyFilters,
-  type AnomalyPriority,
-  type AnomalyStatus,
-} from "@/lib/types/dashboard";
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
+  anomalyPrioritySchema,
+  anomalyStatusSchema,
+  isoDateSchema,
+  paginationQuerySchema,
+  type AnomalyListResponse,
+} from "@/lib/schemas";
+import type { AnomalyFilters } from "@/lib/types/dashboard";
 
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
-  const priority = sp.get("priority");
-  const status = sp.get("status");
-  const from = sp.get("from");
-  const to = sp.get("to");
+  const text = (key: string, max: number) => sp.get(key)?.slice(0, max) || undefined;
 
   const filters: AnomalyFilters = {
-    q: sp.get("q")?.slice(0, 100) || undefined,
-    category: sp.get("category")?.slice(0, 100) || undefined,
-    supplierId: sp.get("supplierId")?.slice(0, 50) || undefined,
-    priority: ANOMALY_PRIORITIES.includes(priority as AnomalyPriority) ? (priority as AnomalyPriority) : undefined,
-    status: ANOMALY_STATUSES.includes(status as AnomalyStatus) ? (status as AnomalyStatus) : undefined,
-    from: from && DATE.test(from) ? from : undefined,
-    to: to && DATE.test(to) ? to : undefined,
+    q: text("q", 100),
+    category: text("category", 100),
+    supplier_id: text("supplier_id", 50),
+    priority: anomalyPrioritySchema.safeParse(sp.get("priority")).data,
+    status: anomalyStatusSchema.safeParse(sp.get("status")).data,
+    from: isoDateSchema.safeParse(sp.get("from")).data,
+    to: isoDateSchema.safeParse(sp.get("to")).data,
   };
 
-  const page = Math.max(1, Number(sp.get("page")) || 1);
-  const pageSize = Math.min(200, Math.max(1, Number(sp.get("pageSize")) || 50));
-  const all = await listAnomalies(filters);
-
-  return Response.json({
-    data: all.slice((page - 1) * pageSize, page * pageSize),
-    page,
-    pageSize,
-    total: all.length,
+  const paging = paginationQuerySchema.safeParse({
+    page: sp.get("page") ?? undefined,
+    page_size: sp.get("page_size") ?? undefined,
   });
+  if (!paging.success) return Response.json({ error: "Invalid page or page_size" }, { status: 400 });
+
+  const { page, page_size } = paging.data;
+  const all = await listAnomalies(filters);
+  const body: AnomalyListResponse = {
+    items: all.slice((page - 1) * page_size, page * page_size),
+    page,
+    page_size,
+    total: all.length,
+  };
+  return Response.json(body);
 }

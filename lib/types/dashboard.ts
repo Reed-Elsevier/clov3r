@@ -1,22 +1,36 @@
 /**
- * View-model contract for the dashboard pages.
+ * View models for the dashboard pages.
  *
- * These shapes are what the UI renders, independent of how they are produced.
- * Today they are filled from mock data (lib/data/mock); once
- * feat/data-schema-contract + feat/ingestion-api land, the same shapes are
- * produced from Postgres in lib/data/*.ts and no component needs to change.
- *
- * Enums below mirror PLAN-01's `anomalies` table. When lib/schemas exists,
- * replace these with re-exports from there.
+ * Row-level shapes (anomalies, invoices, suppliers, explanations) and enums come
+ * from the shared contract in `lib/schemas`. The aggregate shapes below (KPIs,
+ * chart series) have no table of their own; `lib/data/*.ts` produces them from
+ * mocks today and from Postgres once the aggregate queries land.
  */
+import type {
+  AnomalyPriority,
+  AnomalyStatus,
+  InvoiceExceptionType,
+  SupplierCategory,
+  SupplierRiskTier,
+} from "@/lib/schemas";
 
-export const ANOMALY_PRIORITIES = ["High", "Medium", "Low"] as const;
-export const ANOMALY_STATUSES = ["Needs review", "Investigating", "Resolved", "Dismissed"] as const;
-export const ANOMALY_METHODS = ["rule", "statistical", "isolation_forest"] as const;
-
-export type AnomalyPriority = (typeof ANOMALY_PRIORITIES)[number];
-export type AnomalyStatus = (typeof ANOMALY_STATUSES)[number];
-export type AnomalyMethod = (typeof ANOMALY_METHODS)[number];
+export {
+  ANOMALY_METHODS,
+  ANOMALY_PRIORITIES,
+  ANOMALY_STATUSES,
+  KNOWN_ANOMALY_CATEGORIES,
+} from "@/lib/schemas/enums";
+export type {
+  Anomaly,
+  AnomalyDetail,
+  AnomalyEvidence,
+  AnomalyExplanation,
+  AnomalyListItem,
+  AnomalyMethod,
+  AnomalyPriority,
+  AnomalyStatus,
+  Paginated,
+} from "@/lib/schemas";
 
 export type DataSource = "mock" | "live";
 
@@ -84,48 +98,13 @@ export interface OverviewData {
 
 /* ---------- Page 2: Anomaly Investigation (PLAN-07) ---------- */
 
-/** Freeform `anomalies.evidence` jsonb; keys differ per category (see PLAN-01 notes). */
-export type Evidence = Record<string, string | number | boolean | null>;
-
-export interface AnomalyListItem {
-  anomalyId: string;
-  invoiceId: string;
-  supplierId: string;
-  supplierName: string;
-  category: string;
-  method: AnomalyMethod;
-  priority: AnomalyPriority;
-  /** 0-1, higher = more anomalous. */
-  score: number;
-  /** One-line evidence summary for the table. */
-  evidenceSummary: string;
-  status: AnomalyStatus;
-  amountUsd: number;
-  invoiceDate: string;
-  createdAt: string;
-}
-
-/** Mirrors PLAN-01 `anomaly_explanations`. */
-export interface AnomalyExplanation {
-  explanation: string;
-  potentialImpact: string;
-  recommendedActions: string[];
-  preventiveMeasure: string;
-  modelId: string;
-  generatedAt: string;
-}
-
-export interface AnomalyDetail extends AnomalyListItem {
-  evidence: Evidence;
-  explanation: AnomalyExplanation | null;
-}
-
+/** Query filters for GET /api/anomalies; row shapes come from lib/schemas/api.ts. */
 export interface AnomalyFilters {
   q?: string;
   category?: string;
   priority?: AnomalyPriority;
   status?: AnomalyStatus;
-  supplierId?: string;
+  supplier_id?: string;
   from?: string;
   to?: string;
 }
@@ -144,17 +123,17 @@ export interface DepartmentExceptions {
 export interface SupplierExceptions {
   supplierId: string;
   supplierName: string;
-  category: string;
-  riskTier: "High" | "Medium" | "Low";
+  category: SupplierCategory;
+  riskTier: SupplierRiskTier;
   invoices: number;
   exceptions: number;
   /** Percent (0-100). */
   exceptionRate: number;
-  topExceptionType: string;
+  topExceptionType: InvoiceExceptionType;
 }
 
 export interface ReviewTimeByType {
-  exceptionType: string;
+  exceptionType: InvoiceExceptionType;
   count: number;
   /** resolved_at - raised_at, in hours. */
   medianHours: number;
@@ -186,7 +165,7 @@ export type Feasibility = "High" | "Medium" | "Low";
 export interface AutomationCandidate {
   id: string;
   title: string;
-  exceptionType: string;
+  exceptionType: InvoiceExceptionType;
   scope: string;
   proposedControl: string;
   /** Historical occurrences in the analysis window. */

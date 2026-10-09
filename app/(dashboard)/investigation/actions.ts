@@ -1,31 +1,20 @@
 "use server";
 
-import {
-  generateExplanation,
-  getAnomaly,
-  updateAnomalyStatus,
-} from "@/lib/data/anomalies";
-import { ANOMALY_STATUSES, type AnomalyDetail, type AnomalyStatus } from "@/lib/types/dashboard";
+import { generateExplanation, getAnomalyDetail, updateAnomalyStatus } from "@/lib/data/anomalies";
+import { anomalySchema, updateAnomalyStatusSchema, type AnomalyDetail, type AnomalyStatus } from "@/lib/schemas";
 
 // TODO: add an auth/role check here once authentication exists — these are callable via direct POST.
-const ID_PATTERN = /^ANM-\d{1,10}$/;
-
-function assertId(id: unknown): asserts id is string {
-  if (typeof id !== "string" || !ID_PATTERN.test(id)) throw new Error("Invalid anomaly id");
-}
+const idSchema = anomalySchema.shape.anomaly_id;
 
 export async function fetchAnomalyDetail(id: string): Promise<AnomalyDetail | null> {
-  assertId(id);
-  return getAnomaly(id);
+  return getAnomalyDetail(idSchema.parse(id));
 }
 
 export async function setAnomalyStatus(id: string, status: AnomalyStatus): Promise<AnomalyDetail | null> {
-  assertId(id);
-  if (!ANOMALY_STATUSES.includes(status)) throw new Error("Invalid status");
-  return updateAnomalyStatus(id, status);
+  const parsed = updateAnomalyStatusSchema.extend({ id: idSchema }).parse({ id, status });
+  return updateAnomalyStatus(parsed.id, parsed.status);
 }
 
 export async function requestExplanation(id: string): Promise<AnomalyDetail | null> {
-  assertId(id);
-  return generateExplanation(id);
+  return generateExplanation(idSchema.parse(id));
 }
