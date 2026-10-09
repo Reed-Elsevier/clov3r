@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:detectors": "tsx --conditions=react-server --test lib/detectors/*.test.ts",
+    "anomalies:batch": "tsx --conditions=react-server scripts/detect-anomalies.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -14,12 +16,14 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.6",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.0",
     "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
@@ -32,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

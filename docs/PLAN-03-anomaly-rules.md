@@ -59,3 +59,15 @@ claim).
   automatic rejections — `status` always starts at `'Needs review'`.
 - Keep thresholds configurable (e.g. a constants file) so they can be tuned
   without code changes once real distributions are seen.
+
+## Implementation
+
+Implemented with PLAN-04 on `feat/anomaly-rules-ml`, based on `origin/main`
+after the shared schema contract merged. Pure detectors and exact evidence
+fields are documented in [lib/detectors/README.md](../lib/detectors/README.md).
+The batch CLI supports curated CSVs, loaded PostgreSQL, synthetic fixtures,
+JSON threshold overrides, label-agreement reports, and insert-only persistence
+that cannot reset human review outcomes.
+
+See [ANOMALY_VALIDATION.md](./ANOMALY_VALIDATION.md) for verified fixture results
+and the real-data/database validation gates blocked by unavailable inputs.

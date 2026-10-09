@@ -42,3 +42,10 @@ yarn-error.log*
 next-env.d.ts
 
 /dataset
+
+**/.venv/
+**/.terraform/
+**/__pycache__/
+*.pyc
+/services/anomaly-engine/artifacts/
+/reports/anomalies/

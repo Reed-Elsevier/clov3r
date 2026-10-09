@@ -1,0 +1,49 @@
+name: Anomaly Detection
+
+on:
+  pull_request:
+    paths:
+      - "lib/detectors/**"
+      - "lib/schemas/**"
+      - "lib/db/**"
+      - "services/anomaly-engine/**"
+      - "scripts/detect-anomalies.ts"
+      - "package*.json"
+      - ".github/workflows/anomalies.yml"
+  push:
+    branches: [main, feat/anomaly-rules-ml]
+    paths:
+      - "lib/**"
+      - "services/anomaly-engine/**"
+      - "scripts/detect-anomalies.ts"
+      - "package*.json"
+      - ".github/workflows/anomalies.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:detectors
+      - run: npm run typecheck
+      - run: npx eslint lib/detectors scripts/detect-anomalies.ts
+      - run: npm run anomalies:batch -- --source fixture --as-of 2026-10-08
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/anomaly-engine/requirements*.txt
+      - run: pip install -r services/anomaly-engine/requirements-dev.txt
+      - run: python -B -m unittest discover -s services/anomaly-engine/tests -v

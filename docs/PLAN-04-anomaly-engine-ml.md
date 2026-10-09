@@ -52,3 +52,17 @@ that simple per-field rules miss (IDEA.md §4, technique 2).
   validate the detector responds correctly — do not claim these as real
   findings.
 - Keep model training offline/batch (not per-request) given dataset scale.
+
+## Implementation
+
+Implemented with PLAN-03 on `feat/anomaly-rules-ml`. The FastAPI service loads
+a batch-trained artifact; scoring does not train a model. Five numeric fields
+plus two explicit missingness flags are disclosed in
+[services/anomaly-engine/README.md](../services/anomaly-engine/README.md), with
+training, API, Docker, readiness, and batch-persistence instructions.
+
+The server-only TypeScript client preserves raw scores and validates exact
+invoice/result alignment and model identity before persistence. See
+[ANOMALY_VALIDATION.md](./ANOMALY_VALIDATION.md) for controlled synthetic probe
+results and remaining real-data/deployment checks. The current service uses
+receipt latency consistently, not a mixture of receipt and payment durations.
