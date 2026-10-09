@@ -31,9 +31,19 @@ variable "az_count" {
   default = 2
 }
 
-variable "bastion_instance_type" {
-  type    = string
-  default = "t4g.nano"
+variable "db_allowed_cidrs" {
+  description = <<-EOT
+    Public IPs allowed to connect to Postgres, keyed by a short name, e.g.
+    { sotelor = "58.69.2.186/32" }. Each teammate adds their own (find it at
+    https://checkip.amazonaws.com). Empty = database not publicly reachable.
+  EOT
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition     = alltrue([for cidr in values(var.db_allowed_cidrs) : can(cidrhost(cidr, 0)) && cidr != "0.0.0.0/0"])
+    error_message = "Each db_allowed_cidrs value must be a valid IPv4 CIDR (e.g. 1.2.3.4/32), and 0.0.0.0/0 is not allowed."
+  }
 }
 
 variable "db_instance_class" {

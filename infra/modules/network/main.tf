@@ -1,6 +1,7 @@
-// VPC with public subnets (bastion now, ALB later) and private subnets (RDS
-// now, ECS tasks later). No NAT gateway yet: nothing private needs outbound
-// internet until the ECS services land (add NAT or VPC endpoints then).
+// VPC with public subnets (RDS now, so laptops can reach it via an IP
+// allow-list; ALB later) and private subnets (ECS tasks later). No NAT gateway
+// yet: nothing private needs outbound internet until the ECS services land
+// (add NAT or VPC endpoints then).
 
 variable "name_prefix" {
   type = string

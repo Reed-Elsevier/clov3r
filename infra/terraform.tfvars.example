@@ -1,6 +1,14 @@
-# Optional overrides. Copy to infra/terraform.tfvars (git-ignored).
-# Most companies require ownership/cost tags. Check with your cloud platform team.
-extra_tags = {
-  Owner      = "you@example.com"
-  CostCenter = "REPLACE_ME"
+# Copy to infra/terraform.tfvars (git-ignored) in CloudShell and fill in.
+
+# Public IPs allowed to reach Postgres: one entry per teammate/location.
+# Find yours at https://checkip.amazonaws.com and add "/32".
+db_allowed_cidrs = {
+  sotelor = "58.69.2.186/32"
+  # teammate2 = "x.x.x.x/32"
 }
+
+# Most companies require ownership/cost tags. Check with your cloud platform team.
+# extra_tags = {
+#   Owner      = "you@example.com"
+#   CostCenter = "REPLACE_ME"
+# }

@@ -1,6 +1,11 @@
-// Private RDS Postgres. The master password is generated and stored by RDS in
-// AWS Secrets Manager (manage_master_user_password), so it never appears in
-// .tf files or Terraform state. Note: RDS rotates it every 7 days by default.
+// RDS Postgres. The master password is generated and stored by RDS in AWS
+// Secrets Manager (manage_master_user_password), so it never appears in .tf
+// files or Terraform state. Note: RDS rotates it every 7 days by default.
+//
+// The instance lives in the public subnets so it can be reached from team
+// laptops, but it only gets a public IP when `allowed_cidrs` is non-empty, and
+// the security group only admits those exact CIDRs (plus any security groups,
+// e.g. future ECS tasks). TLS is enforced via rds.force_ssl.
 
 variable "name_prefix" {
   type = string
@@ -11,13 +16,20 @@ variable "vpc_id" {
 }
 
 variable "subnet_ids" {
-  description = "Private subnets in at least 2 AZs."
+  description = "Subnets in at least 2 AZs (public subnets if allowed_cidrs is used)."
   type        = list(string)
+}
+
+variable "allowed_cidrs" {
+  description = "Public CIDRs (e.g. a laptop's IP/32) allowed on 5432, keyed by a static name. Non-empty makes the instance publicly accessible."
+  type        = map(string)
+  default     = {}
 }
 
 variable "allowed_security_groups" {
   description = "Security groups allowed to connect on 5432, keyed by a static name."
   type        = map(string)
+  default     = {}
 }
 
 variable "instance_class" {
@@ -56,10 +68,21 @@ resource "aws_db_subnet_group" "this" {
 
 resource "aws_security_group" "db" {
   name        = "${var.name_prefix}-postgres"
-  description = "RDS Postgres: inbound 5432 from allowed security groups only"
+  description = "RDS Postgres: inbound 5432 from allow-listed CIDRs and security groups only"
   vpc_id      = var.vpc_id
 
   tags = { Name = "${var.name_prefix}-postgres" }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "postgres_cidr" {
+  for_each = var.allowed_cidrs
+
+  security_group_id = aws_security_group.db.id
+  description       = "Postgres from ${each.key}"
+  ip_protocol       = "tcp"
+  from_port         = 5432
+  to_port           = 5432
+  cidr_ipv4         = each.value
 }
 
 resource "aws_vpc_security_group_ingress_rule" "postgres" {
@@ -101,7 +124,7 @@ resource "aws_db_instance" "this" {
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [aws_security_group.db.id]
   parameter_group_name   = aws_db_parameter_group.this.name
-  publicly_accessible    = false
+  publicly_accessible    = length(var.allowed_cidrs) > 0
   multi_az               = false
 
   backup_retention_period    = 1
@@ -112,6 +135,10 @@ resource "aws_db_instance" "this" {
   deletion_protection       = var.deletion_protection
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.name_prefix}-postgres-final"
+}
+
+output "identifier" {
+  value = aws_db_instance.this.identifier
 }
 
 output "address" {

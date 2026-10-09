@@ -23,6 +23,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@aws-sdk/client-rds": "^3.1148.0",
+    "@aws-sdk/client-secrets-manager": "^3.1148.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",

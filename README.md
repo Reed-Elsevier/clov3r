@@ -32,8 +32,9 @@ cp .env.example .env.local   # then set DATABASE_URL
 npm run db:migrate           # apply drizzle/ migrations
 ```
 
-To use the shared AWS dev database (RDS via an SSM tunnel) and Bedrock instead
-of a local Postgres, follow [infra/README.md](infra/README.md).
+To use the shared AWS dev database (RDS) and Bedrock instead of a local
+Postgres, follow [infra/README.md](infra/README.md). No AWS tools are needed on
+your laptop.
 
 After changing `lib/db/schema.ts`, run `npm run db:generate` to create a new
 migration, update the matching Zod schema, and run `npm run typecheck` (it fails

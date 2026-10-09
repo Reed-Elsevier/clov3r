@@ -34,6 +34,9 @@ yarn-error.log*
 .env*
 !.env.example
 
+# RDS CA bundle downloaded by infra/scripts/write-env.mjs
+/.certs/
+
 # vercel
 .vercel
 
