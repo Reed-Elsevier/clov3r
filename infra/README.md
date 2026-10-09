@@ -7,7 +7,7 @@ credentials copied from the SSO portal. The Next.js app runs locally against
 RDS and calls Bedrock directly.
 
 ```
-AWS CloudShell (browser) ──terraform apply──► VPC + RDS Postgres 17 (ap-southeast-2)
+AWS CloudShell (browser) ──terraform apply──► VPC + RDS Postgres 17 (ap-southeast-1)
                                                     ▲ 5432, TLS verified, allow-listed IPs only
 laptop: npm run dev / db:migrate ───────────────────┘
 laptop ──(temporary SSO credentials)──► Amazon Bedrock
@@ -16,7 +16,7 @@ laptop ──(temporary SSO credentials)──► Amazon Bedrock
 | Path | What |
 |---|---|
 | `bootstrap/` | One-time S3 bucket for shared Terraform state (versioned, encrypted, TLS-only) |
-| `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf` | Root stack (region `ap-southeast-2`, S3 backend with native locking) |
+| `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf` | Root stack (region `ap-southeast-1`, S3 backend with native locking) |
 | `modules/network` | VPC `10.40.0.0/16`, 2 public + 2 private subnets (private ones for ECS later), no NAT |
 | `modules/rds` | Postgres 17 `db.t4g.micro`, encrypted, `rds.force_ssl=1`, reachable only from `db_allowed_cidrs` |
 | `scripts/write-env.mjs` | Laptop helper: fills `DATABASE_URL` in `.env.local` from the RDS secret and tests the connection |
@@ -53,7 +53,7 @@ Ask before applying, or if anything fails with `AccessDenied` / `explicit deny`:
 ## 2. Create the infrastructure (ONE person, in AWS CloudShell)
 
 Open the AWS console for the project account (via the SSO portal), switch to
-**Asia Pacific (Sydney) ap-southeast-2**, and click the CloudShell icon.
+**Asia Pacific (Singapore) ap-southeast-1**, and click the CloudShell icon.
 
 **Get the code.** On GitHub, open branch `infra/aws-dev-backbone` →
 **Code → Download ZIP**. In CloudShell: **Actions → Upload file**, then:
@@ -149,10 +149,10 @@ Most Bedrock models are enabled by default. Your SSO role needs
 permissions (see the [model access docs](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)).
 
 1. **Anthropic models:** one person opens the model in the Bedrock console
-   **Model catalog** (ap-southeast-2) and submits the one-time *use case*
+   **Model catalog** (ap-southeast-1) and submits the one-time *use case*
    form. It can stay "pending" for a while; AWS emails when done.
-2. Pick a model. Newer models in Sydney are usually invoked through
-   cross-region **inference profiles** (`au.` / `apac.` / `global.` prefixes).
+2. Pick a model. Newer models in Singapore are usually invoked through
+   cross-region **inference profiles** (`apac.` / `global.` prefixes).
    List them in CloudShell:
 
    ```bash
@@ -160,8 +160,8 @@ permissions (see the [model access docs](https://docs.aws.amazon.com/bedrock/lat
    aws bedrock list-foundation-models --by-provider anthropic --query "modelSummaries[].modelId"
    ```
 
-   If your company restricts data to Australia, prefer `au.` profiles.
-   `apac.` / `global.` ones may be denied by an SCP.
+   `apac.` profiles keep requests within Asia-Pacific regions. `global.` ones
+   can route worldwide and may be denied by a company SCP.
 3. Smoke test in CloudShell (or use the console **Playground**):
 
    ```bash

@@ -3,7 +3,8 @@
 // AWS credentials copied from your SSO access portal (see infra/README.md).
 // Never prints the password. Re-run after RDS rotates it (every 7 days).
 //
-// Usage: node infra/scripts/write-env.mjs [--identifier invoiceiq-dev-postgres] [--region ap-southeast-2]
+// Usage: node infra/scripts/write-env.mjs [--identifier invoiceiq-dev-postgres] [--region <aws-region>]
+//   Region defaults to AWS_REGION (from your shell or .env.local), else ap-southeast-1.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,7 +23,7 @@ loadEnv({ path: [".env.local", ".env"], quiet: true });
 const { values: args } = parseArgs({
   options: {
     identifier: { type: "string", default: "invoiceiq-dev-postgres" },
-    region: { type: "string", default: "ap-southeast-2" },
+    region: { type: "string", default: process.env.AWS_REGION || "ap-southeast-1" },
   },
 });
 

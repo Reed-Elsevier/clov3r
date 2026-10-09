@@ -1,7 +1,7 @@
 variable "region" {
   description = "AWS region for all resources (and Bedrock calls)."
   type        = string
-  default     = "ap-southeast-2"
+  default     = "ap-southeast-1"
 }
 
 variable "project" {
