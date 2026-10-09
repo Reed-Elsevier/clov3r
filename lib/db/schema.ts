@@ -266,6 +266,7 @@ export const anomalies = sqliteTable(
       t.category,
     ),
     index("anomalies_status_idx").on(t.status),
+    index("anomalies_invoice_status_idx").on(t.invoice_id, t.status),
     index("anomalies_priority_idx").on(t.priority),
     index("anomalies_category_idx").on(t.category),
     check(

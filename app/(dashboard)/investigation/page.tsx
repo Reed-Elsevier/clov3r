@@ -18,6 +18,6 @@ export default function InvestigationPage({ searchParams }: PageProps<"/investig
 async function InvestigationContent({ searchParams }: { searchParams: PageProps<"/investigation">["searchParams"] }) {
   const { q } = await searchParams;
   const initialQuery = typeof q === "string" ? q.slice(0, 100) : "";
-  const rows = await listAnomalies();
+  const rows = await listAnomalies({ q: initialQuery || undefined }, { perCategory: 100 });
   return <AnomalyExplorer key={initialQuery} initialRows={rows} initialQuery={initialQuery} />;
 }

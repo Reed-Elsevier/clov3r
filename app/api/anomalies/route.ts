@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { listAnomalies } from "@/lib/data/anomalies";
+import { countAnomalies, listAnomalies } from "@/lib/data/anomalies";
 import {
   anomalyPrioritySchema,
   anomalyStatusSchema,
@@ -30,12 +30,10 @@ export async function GET(req: NextRequest) {
   if (!paging.success) return Response.json({ error: "Invalid page or page_size" }, { status: 400 });
 
   const { page, page_size } = paging.data;
-  const all = await listAnomalies(filters);
-  const body: AnomalyListResponse = {
-    items: all.slice((page - 1) * page_size, page * page_size),
-    page,
-    page_size,
-    total: all.length,
-  };
+  const [items, total] = await Promise.all([
+    listAnomalies(filters, { limit: page_size, offset: (page - 1) * page_size }),
+    countAnomalies(filters),
+  ]);
+  const body: AnomalyListResponse = { items, page, page_size, total };
   return Response.json(body);
 }

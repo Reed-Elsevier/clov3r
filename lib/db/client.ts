@@ -12,7 +12,7 @@ const globalForDb = globalThis as unknown as { __invoiceiqDb?: Database };
 
 /** SQLite file path: `DATABASE_PATH`, defaulting to `data/clov3r.db`. */
 export function databasePath(): string {
-  return path.resolve(process.env.DATABASE_PATH || "data/clov3r.db");
+  return path.resolve(/*turbopackIgnore: true*/ process.env.DATABASE_PATH || "data/clov3r.db");
 }
 
 /**

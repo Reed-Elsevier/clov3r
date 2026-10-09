@@ -1,0 +1,1 @@
+CREATE INDEX `anomalies_invoice_status_idx` ON `anomalies` (`invoice_id`,`status`);
