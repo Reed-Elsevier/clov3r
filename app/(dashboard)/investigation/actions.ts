@@ -1,6 +1,7 @@
 "use server";
 
-import { generateExplanation, getAnomalyDetail, updateAnomalyStatus } from "@/lib/data/anomalies";
+import { getAnomalyDetail, updateAnomalyStatus } from "@/lib/data/anomalies";
+import { explainAnomaly } from "@/lib/explanations/service";
 import { anomalySchema, updateAnomalyStatusSchema, type AnomalyDetail, type AnomalyStatus } from "@/lib/schemas";
 
 // TODO: add an auth/role check here once authentication exists — these are callable via direct POST.
@@ -15,6 +16,8 @@ export async function setAnomalyStatus(id: string, status: AnomalyStatus): Promi
   return updateAnomalyStatus(parsed.id, parsed.status);
 }
 
-export async function requestExplanation(id: string): Promise<AnomalyDetail | null> {
-  return generateExplanation(idSchema.parse(id));
+export async function requestExplanation(id: string, regenerate = false): Promise<AnomalyDetail | null> {
+  const anomalyId = idSchema.parse(id);
+  await explainAnomaly(anomalyId, { regenerate: regenerate === true });
+  return getAnomalyDetail(anomalyId);
 }

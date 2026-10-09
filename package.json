@@ -14,9 +14,11 @@
     "db:studio": "drizzle-kit studio",
     "data:load": "tsx scripts/load-dataset/load-curated.ts",
     "data:clean-raw": "tsx scripts/load-dataset/clean-raw.ts",
-    "test": "tsx --test scripts/load-dataset/lib/normalize.test.ts scripts/load-dataset/lib/convert.test.ts"
+    "ai:explain": "tsx scripts/explain-anomalies.ts",
+    "test": "tsx --test scripts/load-dataset/lib/normalize.test.ts scripts/load-dataset/lib/convert.test.ts lib/explanations/explanations.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1148.0",
     "csv-parse": "^7.0.3",
     "dotenv": "^18.0.6",
     "drizzle-orm": "^0.45.4",
