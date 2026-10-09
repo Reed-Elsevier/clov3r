@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand (from logo) */
+  --relx-orange: #F18113;
+  --relx-gray:   #676767;
+
+  /* Orange tints and shades */
+  --orange-600:  #D96F0A;  /* hover / pressed */
+  --orange-100:  #FDEBD7;  /* light backgrounds, badges */
+
+  /* Neutrals */
+  --gray-900:    #2B2B2B;  /* main text */
+  --gray-700:    #4A4A4A;  /* secondary text */
+  --gray-500:    #676767;  /* brand gray */
+  --gray-300:    #C9C9C9;  /* borders */
+  --gray-100:    #F3F3F3;  /* page sections */
+  --white:       #FFFFFF;
+
+  /* Status colors for review screens */
+  --success:     #2E7D32;
+  --warning:     #F9A825;
+  --danger:      #C62828;
 }
 
+/* Expose brand tokens as Tailwind utilities: bg-brand, text-gray-700, border-gray-300, text-danger, ... */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-brand: var(--relx-orange);
+  --color-brand-600: var(--orange-600);
+  --color-brand-100: var(--orange-100);
+
+  --color-gray-900: var(--gray-900);
+  --color-gray-700: var(--gray-700);
+  --color-gray-500: var(--gray-500);
+  --color-gray-300: var(--gray-300);
+  --color-gray-100: var(--gray-100);
+  --color-white: var(--white);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--gray-100);
+  color: var(--gray-900);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
