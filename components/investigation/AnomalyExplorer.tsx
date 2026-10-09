@@ -266,9 +266,19 @@ function DetailDrawer({
                   {detail.explanation.requires_human_review && (
                     <p className="rounded-xl bg-warning/15 px-3 py-2 text-xs font-medium text-gray-900">Requires human review before any action.</p>
                   )}
-                  <p className="text-xs text-gray-500">
-                    Model {detail.explanation.model_id} · {detail.explanation.generated_at}
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-gray-500">
+                      Model {detail.explanation.model_id} · {detail.explanation.generated_at}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => requestExplanation(detail.anomaly.anomaly_id, true))}
+                      className="rounded-full border border-gray-300 px-3 py-1 text-xs font-medium text-gray-700 hover:border-brand hover:text-brand-600 disabled:opacity-60"
+                    >
+                      {pending ? "Regenerating…" : "Regenerate"}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col items-start gap-3 text-sm text-gray-500">

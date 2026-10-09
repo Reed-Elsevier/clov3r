@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:detectors": "tsx --conditions=react-server --test lib/detectors/*.test.ts",
+    "anomalies:batch": "tsx --conditions=react-server scripts/detect-anomalies.ts",
     "typecheck": "next typegen && tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -14,9 +16,11 @@
     "db:studio": "drizzle-kit studio",
     "data:load": "tsx scripts/load-dataset/load-curated.ts",
     "data:clean-raw": "tsx scripts/load-dataset/clean-raw.ts",
-    "test": "tsx --test scripts/load-dataset/lib/normalize.test.ts scripts/load-dataset/lib/convert.test.ts"
+    "ai:explain": "tsx --conditions=react-server scripts/explain-anomalies.ts",
+    "test": "tsx --conditions=react-server --test scripts/load-dataset/lib/normalize.test.ts scripts/load-dataset/lib/convert.test.ts lib/explanations/explanations.test.ts lib/detectors/rules.test.ts lib/detectors/pipeline.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1148.0",
     "csv-parse": "^7.0.3",
     "dotenv": "^18.0.6",
     "drizzle-orm": "^0.45.4",
@@ -25,6 +29,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "recharts": "^3.10.1",
+    "server-only": "^0.0.1",
     "zod": "^4.6.5"
   },
   "devDependencies": {
