@@ -45,7 +45,8 @@ Terraform in `infra/`, organized as:
 - `terraform plan` succeeds with no errors against a real AWS account
   (requires credentials — not run in this session).
 - Secrets (DB password, etc.) are never in `.tf` files or state in plaintext
-  — Secrets Manager + `random_password` resource.
+  — RDS-managed credentials in Secrets Manager. Do not use `random_password`
+  for this requirement: its result is stored in Terraform state.
 - Outputs provide everything `feat/data-schema-contract`'s `.env.example`
   needs (`DATABASE_URL` shape, Bedrock model ID/region).
 
@@ -66,3 +67,20 @@ Terraform in `infra/`, organized as:
   `ANOMALY_ENGINE_URL` / `BEDROCK_MODEL_ID` into both the Next.js app's and
   the anomaly-engine's deployed environment (ECS task definitions), replacing
   local dev defaults.
+
+## Implementation decisions
+
+- Branch: `infra/aws-terraform`, based on current `origin/main`.
+- Approved defaults: Fargate, `us-east-1`, local state initially, configurable
+  Bedrock model/explicit invocation ARNs, AWS-managed RDS credentials.
+- Deployment and runtime contracts are documented in [infra/README.md](../infra/README.md).
+  Both services receive real configuration via their ECS task definitions;
+  database URLs are assembled only at container startup, outside Terraform.
+- [Bedrock prerequisites](../infra/bedrock/README.md) are a manual account step.
+  Current AWS access behavior varies by provider; do not assume every model
+  requires the legacy model-access request flow.
+- Both services initially have zero tasks so ECR images can be published before
+  launch. Image build/migrations depend on the app and anomaly-engine branches.
+- Local verification uses mock-provider Terraform tests and launcher tests.
+  A real-account `terraform plan`, model invocation, and deployed end-to-end
+  checks remain mandatory deployment gates and are not run in this session.

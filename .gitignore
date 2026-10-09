@@ -41,3 +41,13 @@ yarn-error.log*
 next-env.d.ts
 
 /dataset
+
+# Terraform local state, plans, and provider cache
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log

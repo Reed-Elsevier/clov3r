@@ -1,0 +1,36 @@
+name: Terraform Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra-terraform.yml"
+  push:
+    branches: [main, infra/aws-terraform]
+    paths:
+      - "infra/**"
+      - ".github/workflows/infra-terraform.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.5"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: terraform -chdir=infra fmt -check -recursive
+      - run: terraform -chdir=infra init -backend=false -input=false
+      - run: terraform -chdir=infra validate
+      - run: terraform -chdir=infra test
+      - run: node --test infra/tests/entrypoints.test.cjs
+      - run: python -B -m unittest discover -s infra/tests -p '*_test.py' -v
