@@ -56,11 +56,22 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen shrink-0 flex-col gap-5 overflow-hidden bg-gray-900 px-3 py-5 text-white transition-[width] duration-200 ${pick("w-64", "w-16", "w-16 lg:w-64")}`}
+      className={`sticky top-0 flex h-screen shrink-0 flex-col gap-5 overflow-x-hidden overflow-y-auto bg-gray-900 px-3 py-5 text-white transition-[width] duration-200 ${pick("w-64", "w-16", "w-16 lg:w-64")}`}
     >
-      <div className="flex items-center gap-2 px-1">
+      <div className={`flex items-center gap-2 px-1 ${pick("flex-row", "flex-col", "flex-col lg:flex-row")}`}>
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-sm font-bold">IQ</span>
         <span className={`whitespace-nowrap text-lg font-semibold tracking-tight ${label}`}>InvoiceIQ AI</span>
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Toggle sidebar"
+          title="Collapse / expand sidebar"
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 text-gray-300 transition-colors hover:bg-brand hover:text-white ${pick("ml-auto", "", "lg:ml-auto")}`}
+        >
+          <span className={`transition-transform ${pick("", "rotate-180", "rotate-180 lg:rotate-0")}`}>
+            <IconChevronLeft />
+          </span>
+        </button>
       </div>
 
       <div className={`items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-2.5 ${flex}`}>
@@ -127,20 +138,7 @@ export function Sidebar() {
         Findings are recommendations for human review — not confirmed fraud or losses.
       </div>
 
-      <button
-        type="button"
-        onClick={toggle}
-        aria-label="Toggle sidebar"
-        title="Toggle sidebar"
-        className={`flex items-center gap-3 whitespace-nowrap rounded-xl p-1.5 text-sm text-gray-300 transition-colors hover:bg-white/5 hover:text-white ${pick("", "mt-auto", "mt-auto lg:mt-0")}`}
-      >
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/5 transition-transform ${pick("", "rotate-180", "rotate-180 lg:rotate-0")}`}>
-          <IconChevronLeft />
-        </span>
-        <span className={label}>Collapse</span>
-      </button>
-
-      <div className="border-t border-white/10 pt-4">
+      <div className={`border-t border-white/10 pt-4 ${pick("", "mt-auto", "mt-auto lg:mt-0")}`}>
         <p className={`mb-2 px-1 text-[11px] font-medium uppercase tracking-wider text-gray-500 ${block}`}>User account</p>
         <div className="flex items-center gap-3 px-0.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-600">
