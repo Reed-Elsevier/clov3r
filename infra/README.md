@@ -136,6 +136,14 @@ npm run db:migrate                    # first time only (one person): creates th
 If it can't connect, the script tells you why: usually your current public
 IP isn't in `db_allowed_cidrs`, or your network blocks outbound port 5432.
 
+The script also works with a database created by hand in the RDS console:
+either an **Aurora PostgreSQL cluster** or a plain RDS instance. Pass
+`--identifier <name>` if it isn't called `invoiceiq-dev-postgres`. For the
+laptop to reach it, the (writer) instance must be **Publicly accessible**
+and its security group must allow PostgreSQL (5432) from your IP. If the
+password isn't managed by Secrets Manager, the script asks for it (or reads
+`DB_PASSWORD`). It creates the `invoiceiq` database if it doesn't exist yet.
+
 ## 4. Load the dataset
 
 Once `feat/ingestion-api` lands, run its loader from your laptop. It uses
