@@ -5,9 +5,12 @@ import { newAnomalySchema } from "../schemas";
 import { runRules, validationMetrics } from "./batch";
 import { engineerFeatures, type InvoiceFeatures } from "./features";
 import { scoreInvoices } from "./isolation-forest-client";
-import { parseFinanceCsv } from "./dataset";
+import { parseFinanceCsv, readFinanceCsv } from "./dataset";
 import { prepareAnomalies, saveAnomalies } from "./persistence";
 import { z } from "zod";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const rows = { invoices: mockInvoices, invoiceLines: mockInvoiceLines, payments: mockPayments, purchaseOrders: mockPurchaseOrders, invoiceExceptions: mockInvoiceExceptions };
 const features: InvoiceFeatures[] = [{ invoice_id: "SYNTHETIC", amount_usd: 1000, vendor_avg_usd: null, processing_days: 2, ocr_confidence: null, supplier_exception_rate: 0 }];
@@ -70,6 +73,23 @@ test("CSV parser handles quoted fields, nullable numbers, and rejects blank requ
   const records = parseFinanceCsv('name,amount,confidence\n"Vendor, Ltd",12.50,\n', schema, ["amount", "confidence"], ["confidence"]);
   assert.deepEqual(records, [{ name: "Vendor, Ltd", amount: 12.5, confidence: null }]);
   assert.throws(() => parseFinanceCsv("name,amount,confidence\nVendor,,0.9\n", schema, ["amount", "confidence"], ["confidence"]));
+});
+
+test("curated CSV reader accepts dataset date formats via the PLAN-02 conversions", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "iq-csv-"));
+  try {
+    await writeFile(join(dir, "invoices.csv"), "invoice_id,supplier_id,po_id,currency,invoice_date,net_amount,tax_amount,gross_amount,amount_usd,invoice_number,received_at,due_date,approval_level,channel,ocr_confidence,processor_employee_id,status\nINV1,SUP1,,USD,2026-03-12 00:00:00,100,12,112,112,A-1,2026-03-13 09:00:00,2026-04-12 00:00:00,L1 - Team Lead,EDI,,EMP1,Paid\n");
+    await writeFile(join(dir, "invoice_lines.csv"), "invoice_line_id,invoice_id,line_no,description,quantity,unit_price,line_amount,gl_account,cost_center_id\n");
+    await writeFile(join(dir, "purchase_orders.csv"), "po_id,supplier_id,cost_center_id,requester_employee_id,approver_employee_id,po_date,currency,po_amount,status\n");
+    await writeFile(join(dir, "payments.csv"), "payment_id,invoice_id,paid_at,amount,currency,method,payment_run_id,days_vs_due\n");
+    await writeFile(join(dir, "invoice_exceptions.csv"), "exception_id,invoice_id,exception_type,raised_at,resolved_at,resolver_employee_id,resolution\n");
+    const result = await readFinanceCsv(dir);
+    assert.equal(result.invoices[0].invoice_date, "2026-03-12");
+    assert.equal(result.invoices[0].po_id, null);
+    assert.equal(runRules(result, "2026-10-08").some((a) => a.category === "Missing PO"), true);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
 });
 
 test("persistence prepares one row per detector key and cannot set human outcomes", async () => {

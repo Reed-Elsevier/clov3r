@@ -2,8 +2,10 @@ import "server-only";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { parse } from "csv-parse/sync";
+import type { Table } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "../db/client";
+import { columnSpecs, convertRow } from "../ingestion/convert";
 import { invoiceSchema, invoiceLineSchema, purchaseOrderSchema, paymentSchema, invoiceExceptionSchema } from "../schemas";
 import type { FinanceRows } from "./context";
 
@@ -20,15 +22,20 @@ export function parseFinanceCsv<Row>(source: string, rowSchema: z.ZodType<Row>, 
 }
 
 export async function readFinanceCsv(directory: string): Promise<FinanceRows> {
-  const read = (name: string) => readFile(join(directory, `${name}.csv`), "utf8");
-  const [invoices, lines, orders, payments, exceptions] = await Promise.all([read("invoices"), read("invoice_lines"), read("purchase_orders"), read("payments"), read("invoice_exceptions")]);
-  const rows = {
-    invoices: parseFinanceCsv(invoices, invoiceSchema, ["net_amount", "tax_amount", "gross_amount", "amount_usd", "ocr_confidence"], ["po_id", "ocr_confidence"]),
-    invoiceLines: parseFinanceCsv(lines, invoiceLineSchema, ["line_no", "quantity", "unit_price", "line_amount"], []),
-    purchaseOrders: parseFinanceCsv(orders, purchaseOrderSchema, ["po_amount"], []),
-    payments: parseFinanceCsv(payments, paymentSchema, ["amount", "days_vs_due"], []),
-    invoiceExceptions: parseFinanceCsv(exceptions, invoiceExceptionSchema, [], ["resolved_at", "resolution"]),
+  const read = async <Row>(name: string, table: Table, rowSchema: z.ZodType<Row>): Promise<Row[]> => {
+    const records = parse(await readFile(join(directory, `${name}.csv`), "utf8"), { columns: true, bom: true, skip_empty_lines: true, trim: true }) as Record<string, string>[];
+    // Same conversions as the PLAN-02 loader (e.g. dataset dates "2026-03-12 00:00:00" -> "2026-03-12").
+    const specs = columnSpecs(table);
+    return records.map((record) => rowSchema.parse(convertRow(specs, record)));
   };
+  const [invoices, invoiceLines, purchaseOrders, payments, invoiceExceptions] = await Promise.all([
+    read("invoices", schema.invoices, invoiceSchema),
+    read("invoice_lines", schema.invoiceLines, invoiceLineSchema),
+    read("purchase_orders", schema.purchaseOrders, purchaseOrderSchema),
+    read("payments", schema.payments, paymentSchema),
+    read("invoice_exceptions", schema.invoiceExceptions, invoiceExceptionSchema),
+  ]);
+  const rows = { invoices, invoiceLines, purchaseOrders, payments, invoiceExceptions };
   if (new Set(rows.invoices.map((invoice) => invoice.invoice_id)).size !== rows.invoices.length) throw new Error("Curated input contains duplicate invoice IDs; use the ingestion cleaning path first");
   return rows;
 }
