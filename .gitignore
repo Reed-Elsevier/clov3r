@@ -42,3 +42,15 @@ yarn-error.log*
 next-env.d.ts
 
 /dataset
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+*.tfvars
+!*.tfvars.example
+infra/backend.hcl

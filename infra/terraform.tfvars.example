@@ -1,0 +1,6 @@
+# Optional overrides. Copy to infra/terraform.tfvars (git-ignored).
+# Most companies require ownership/cost tags. Check with your cloud platform team.
+extra_tags = {
+  Owner      = "you@example.com"
+  CostCenter = "REPLACE_ME"
+}
