@@ -3,7 +3,7 @@
  * a data-quality report (PLAN-02 §2 — demo evidence for IDEA.md Stage 1).
  *
  *   npm run data:clean-raw                 # report only (no DB needed)
- *   npm run data:clean-raw -- --write      # also upsert clean rows into Postgres
+ *   npm run data:clean-raw -- --write      # also upsert clean rows into SQLite
  *
  * Rules: normalise mixed date formats, trim/collapse whitespace, fix casing and
  * near-miss typos in categorical columns, drop near-duplicate rows (same PK,
@@ -17,20 +17,20 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getTableColumns, sql } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
+import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { z } from "zod";
 
 import { closeDb, getDb } from "../../lib/db/client";
 import * as t from "../../lib/db/schema";
 import * as s from "../../lib/schemas";
 import { columnSpecs, convertRow, type ColumnSpec } from "./lib/convert";
-import { datasetDir, hasFlag, readAllCsv } from "./lib/csv";
+import { datasetDir, domainDir, hasFlag, readAllCsv } from "./lib/csv";
 import { cleanText, dedupeByKey, matchEnum, normalizeDate, normalizeTimestamp, parseNumber } from "./lib/normalize";
 
 interface RawTable {
   name: "suppliers" | "invoices";
   file: string;
-  table: PgTable;
+  table: SQLiteTable;
   pk: string;
   schema: z.ZodType;
 }
@@ -185,7 +185,7 @@ async function main() {
 
   // Orphan check reference: curated suppliers when available, plus the cleaned raw suppliers.
   const knownSupplierIds = new Set<string>();
-  const curatedSuppliers = path.join(dir, "G_finance", "suppliers.csv");
+  const curatedSuppliers = path.join(domainDir(dir, "G_finance"), "suppliers.csv");
   if (existsSync(curatedSuppliers)) {
     for (const r of await readAllCsv(curatedSuppliers)) knownSupplierIds.add(r.supplier_id.trim());
   }

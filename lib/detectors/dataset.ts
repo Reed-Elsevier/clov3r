@@ -42,16 +42,19 @@ export async function readFinanceCsv(directory: string): Promise<FinanceRows> {
 
 export async function readFinanceDatabase(): Promise<FinanceRows> {
   const db = getDb();
-  return db.transaction(async (transaction) => {
-    const [invoices, invoiceLines, purchaseOrders, payments, invoiceExceptions] = await Promise.all([
-      transaction.select().from(schema.invoices), transaction.select().from(schema.invoiceLines), transaction.select().from(schema.purchaseOrders), transaction.select().from(schema.payments), transaction.select().from(schema.invoiceExceptions),
-    ]);
-    return {
-      invoices: z.array(invoiceSchema).parse(invoices),
-      invoiceLines: z.array(invoiceLineSchema).parse(invoiceLines),
-      purchaseOrders: z.array(purchaseOrderSchema).parse(purchaseOrders),
-      payments: z.array(paymentSchema).parse(payments),
-      invoiceExceptions: z.array(invoiceExceptionSchema).parse(invoiceExceptions),
-    };
-  }, { isolationLevel: "repeatable read", accessMode: "read only" });
+  // Single read transaction gives a consistent snapshot across the five tables.
+  const rows = db.transaction((transaction) => ({
+    invoices: transaction.select().from(schema.invoices).all(),
+    invoiceLines: transaction.select().from(schema.invoiceLines).all(),
+    purchaseOrders: transaction.select().from(schema.purchaseOrders).all(),
+    payments: transaction.select().from(schema.payments).all(),
+    invoiceExceptions: transaction.select().from(schema.invoiceExceptions).all(),
+  }));
+  return {
+    invoices: z.array(invoiceSchema).parse(rows.invoices),
+    invoiceLines: z.array(invoiceLineSchema).parse(rows.invoiceLines),
+    purchaseOrders: z.array(purchaseOrderSchema).parse(rows.purchaseOrders),
+    payments: z.array(paymentSchema).parse(rows.payments),
+    invoiceExceptions: z.array(invoiceExceptionSchema).parse(rows.invoiceExceptions),
+  };
 }

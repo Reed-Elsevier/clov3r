@@ -1,5 +1,5 @@
 /**
- * Pure CSV-cell -> Postgres-value conversions for the curated G_finance CSVs
+ * Pure CSV-cell -> SQLite-value conversions for the curated G_finance CSVs
  * (see scripts/load-dataset/README.md "CSV -> column conversions"). Shared by
  * the PLAN-02 loader and the PLAN-03 detectors' CSV reader.
  *
@@ -16,19 +16,18 @@ export interface ColumnSpec {
   notNull: boolean;
 }
 
-const KIND_BY_COLUMN_TYPE: Record<string, ColumnKind> = {
-  PgText: "text",
-  PgInteger: "integer",
-  PgNumericNumber: "decimal",
-  PgBoolean: "boolean",
-  PgDateString: "date",
-  PgTimestampString: "timestamp",
+const KIND_BY_SQL_TYPE: Record<string, ColumnKind> = {
+  text: "text",
+  integer: "integer",
+  real: "decimal",
+  date: "date",
+  timestamp: "timestamp",
 };
 
 export function columnSpecs(table: Table): ColumnSpec[] {
   return Object.values(getTableColumns(table)).map((col) => {
-    const kind = KIND_BY_COLUMN_TYPE[col.columnType];
-    if (!kind) throw new Error(`Unsupported column type ${col.columnType} for ${col.name}`);
+    const kind = col.columnType === "SQLiteBoolean" ? "boolean" : KIND_BY_SQL_TYPE[col.getSQLType()];
+    if (!kind) throw new Error(`Unsupported column type ${col.getSQLType()} for ${col.name}`);
     return { name: col.name, kind, notNull: col.notNull };
   });
 }

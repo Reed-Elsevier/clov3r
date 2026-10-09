@@ -5,12 +5,12 @@ They are **not** part of the Next.js request path.
 
 | Command | What it does |
 |---|---|
-| `npm run data:load` | Upserts the 9 curated `G_finance` CSVs into Postgres (FK-safe order, idempotent). Add `-- --tables suppliers,invoices` to load a subset. |
+| `npm run data:load` | Applies `drizzle/` migrations, upserts the 9 curated `G_finance` CSVs (FK-safe order, idempotent), then loads every CSV from the other domains (`A_workforce`, `D_risk`, `H_technology`, `I_process`, `J_ai_portfolio`) as one table per file with inferred INTEGER/REAL/TEXT columns (dropped and recreated each run). Add `-- --tables suppliers,invoices` to load only a finance subset. |
 | `npm run data:clean-raw` | Cleans `raw/suppliers_raw.csv` + `raw/invoices_raw.csv` and writes `scripts/load-dataset/out/data-quality-report.json` (dry run, no DB needed). |
 | `npm run data:clean-raw -- --write` | Same, and upserts the rows that passed every check into `suppliers`/`invoices`. |
 | `npm test` | Unit tests for date normalisation, dedupe, enum/typo matching and CSV conversions. |
 
-Both loaders accept `-- --dataset <dir>` (or `DATASET_DIR`) if the dataset isn't at `./dataset`.
+Both loaders accept `-- --dataset <dir>` (or `DATASET_DIR`) if the dataset isn't at `./datasets`.
 Every row is validated against the shared Zod schema before insert; rejected rows are listed
 and the command exits non-zero. The curated loader prints loaded vs. expected row counts.
 
@@ -31,14 +31,16 @@ and the command exits non-zero. The curated loader prints loaded vs. expected ro
 ## Data source
 
 The loaders read the dataset **directly from disk** — the CSVs are never
-copied into source control (`/dataset` is git-ignored):
+copied into source control (`/datasets` is git-ignored). Each domain may be
+at `datasets/<domain>/` or `datasets/<domain>/<domain>/`:
 
 | Input | Target |
 |---|---|
-| `dataset/G_finance/*.csv` | The 9 finance tables in [`lib/db/schema.ts`](../../lib/db/schema.ts), loaded as-is |
-| `dataset/raw/invoices_raw.csv`, `dataset/raw/suppliers_raw.csv` | Cleaning/validation pipeline (Stage 1 demo), then `invoices`/`suppliers` |
+| `datasets/G_finance/*.csv` | The 9 finance tables in [`lib/db/schema.ts`](../../lib/db/schema.ts), loaded as-is |
+| `datasets/<other domain>/*.csv` | One untyped table per file, named after the file |
+| `datasets/raw/invoices_raw.csv`, `datasets/raw/suppliers_raw.csv` | Cleaning/validation pipeline (Stage 1 demo), then `invoices`/`suppliers` |
 
-Place the extracted dataset at the repo root as `dataset/` before running.
+Place the extracted dataset at the repo root as `datasets/` before running.
 
 ## Load order (FK-safe)
 
@@ -51,11 +53,11 @@ Place the extracted dataset at the repo root as `dataset/` before running.
 CSV headers match the table column names exactly. Values need these
 conversions on load:
 
-| Dataset type | CSV example | Postgres value |
+| Dataset type | CSV example | SQLite value |
 |---|---|---|
 | `date` | `2026-03-12 00:00:00` | `2026-03-12` (drop the time part) |
-| `timestamp` | `2026-03-16 04:34:08` | unchanged (`timestamp` without time zone) |
-| `boolean` | `True` / `False` | `true` / `false` |
+| `timestamp` | `2026-03-16 04:34:08` | unchanged text |
+| `boolean` | `True` / `False` | `1` / `0` |
 | empty cell | `` | `NULL` (e.g. `invoices.po_id`, `invoices.ocr_confidence`, `invoice_exceptions.resolved_at`) |
 
 ## Row counts (from `dataset/_docs/validation_report.json`)
@@ -74,5 +76,5 @@ conversions on load:
 
 ## Prerequisites
 
-1. `cp .env.example .env.local` and set `DATABASE_URL`.
-2. Create the schema: `npm run db:migrate` (applies `drizzle/` migrations).
+No setup needed: the SQLite file is created at `DATABASE_PATH` (default
+`data/clov3r.db`) and migrations are applied by `npm run data:load`.

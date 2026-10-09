@@ -17,13 +17,13 @@ export async function saveAnomalies(rows: NewAnomaly[], database?: Database): Pr
   const prepared = prepareAnomalies(rows);
   if (prepared.length === 0) return 0;
   const db = database ?? getDb();
-  return db.transaction(async (transaction) => {
+  return db.transaction((transaction) => {
     let inserted = 0;
     for (let start = 0; start < prepared.length; start += 500) {
-      const result = await transaction.insert(schema.anomalies).values(prepared.slice(start, start + 500))
+      inserted += transaction.insert(schema.anomalies).values(prepared.slice(start, start + 500))
         .onConflictDoNothing({ target: [schema.anomalies.invoice_id, schema.anomalies.method, schema.anomalies.category] })
-        .returning({ anomaly_id: schema.anomalies.anomaly_id });
-      inserted += result.length;
+        .returning({ anomaly_id: schema.anomalies.anomaly_id })
+        .all().length;
     }
     return inserted;
   });

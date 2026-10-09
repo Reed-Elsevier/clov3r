@@ -12,45 +12,45 @@ import {
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const pct = (part: number, total: number) => (total ? round2((part / total) * 100) : 0);
 
-/** Headline KPIs computed live from Postgres (PLAN-02 §3). */
+/** Headline KPIs computed live from SQLite (PLAN-02 §3). */
 export async function getMetrics(): Promise<MetricsResponse> {
   const db = getDb();
 
   const [[inv], [exc], processing, [anom]] = await Promise.all([
     db
       .select({
-        total: sql<number>`count(*)::int`,
-        withoutPo: sql<number>`(count(*) filter (where ${invoices.po_id} is null))::int`,
+        total: sql<number>`count(*)`,
+        withoutPo: sql<number>`count(*) filter (where ${invoices.po_id} is null)`,
       })
       .from(invoices),
     db
       .select({
-        invoicesWithExceptions: sql<number>`count(distinct ${invoiceExceptions.invoice_id})::int`,
-        open: sql<number>`(count(*) filter (where ${invoiceExceptions.resolved_at} is null))::int`,
+        invoicesWithExceptions: sql<number>`count(distinct ${invoiceExceptions.invoice_id})`,
+        open: sql<number>`count(*) filter (where ${invoiceExceptions.resolved_at} is null)`,
       })
       .from(invoiceExceptions),
-    db.execute<{ avg_days: number | null }>(sql`
-      select avg(extract(epoch from (p.first_paid_at - i.received_at)) / 86400)::float8 as avg_days
+    db.get<{ avg_days: number | null }>(sql`
+      select avg(julianday(p.first_paid_at) - julianday(i.received_at)) as avg_days
       from invoices i
       join (select invoice_id, min(paid_at) as first_paid_at from payments group by invoice_id) p
         on p.invoice_id = i.invoice_id
     `),
     db
       .select({
-        total: sql<number>`count(*)::int`,
-        high: sql<number>`(count(*) filter (where ${anomalies.priority} = 'High'))::int`,
+        total: sql<number>`count(*)`,
+        high: sql<number>`count(*) filter (where ${anomalies.priority} = 'High')`,
         flaggedValue: sql<number>`coalesce((
           select sum(i.amount_usd) from invoices i
           where exists (
             select 1 from anomalies a
             where a.invoice_id = i.invoice_id and a.status in ('Needs review', 'Investigating')
           )
-        ), 0)::float8`,
+        ), 0)`,
       })
       .from(anomalies),
   ]);
 
-  const avgDays = processing.rows[0]?.avg_days;
+  const avgDays = processing?.avg_days;
 
   return {
     total_invoices: inv.total,
@@ -97,7 +97,7 @@ export async function listInvoices(q: InvoiceListQuery): Promise<InvoiceListResp
       .orderBy(desc(invoices.invoice_date), desc(invoices.invoice_id))
       .limit(q.page_size)
       .offset((q.page - 1) * q.page_size),
-    db.select({ total: sql<number>`count(*)::int` }).from(invoices).where(where),
+    db.select({ total: sql<number>`count(*)` }).from(invoices).where(where),
   ]);
 
   return { items, page: q.page, page_size: q.page_size, total };

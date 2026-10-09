@@ -1,30 +1,33 @@
 /**
- * Loads the curated `dataset/G_finance/*.csv` tables into Postgres (PLAN-02 §1).
+ * Loads the dataset into SQLite (PLAN-02 §1).
  *
- *   npm run data:load                          # all 9 tables, FK-safe order
- *   npm run data:load -- --tables suppliers,invoices
- *   npm run data:load -- --dataset D:/reph/dataset
+ *   npm run data:load                          # 9 finance tables + every other domain's CSVs
+ *   npm run data:load -- --tables suppliers,invoices   # finance subset only
+ *   npm run data:load -- --dataset D:/reph/datasets
  *
- * Idempotent: rows are upserted on their primary key, so it can be re-run.
- * Every row is converted (README "CSV -> column conversions") and validated
- * against the shared Zod schema before insert; bad rows are skipped and reported.
+ * Applies `drizzle/` migrations first. Finance tables are upserted on their
+ * primary key; every row is converted (README "CSV -> column conversions") and
+ * validated against the shared Zod schema before insert; bad rows are skipped
+ * and reported. Other domains are loaded as untyped tables (lib/generic.ts).
  */
 import "../../lib/db/load-env";
 
 import path from "node:path";
 import { getTableColumns, sql, type Table } from "drizzle-orm";
-import type { PgTable } from "drizzle-orm/pg-core";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { z } from "zod";
 
-import { closeDb, getDb } from "../../lib/db/client";
+import { closeDb, databasePath, getDb } from "../../lib/db/client";
 import * as t from "../../lib/db/schema";
 import * as s from "../../lib/schemas";
 import { columnSpecs, ConversionError, convertRow } from "./lib/convert";
-import { datasetDir, readCsv } from "./lib/csv";
+import { datasetDir, domainDir, readCsv } from "./lib/csv";
+import { loadOtherDomains } from "./lib/generic";
 
 interface TableLoad {
   name: string;
-  table: PgTable;
+  table: SQLiteTable;
   pk: string;
   schema: z.ZodType;
   /** Row count from dataset/_docs/validation_report.json, for the spot-check. */
@@ -44,7 +47,7 @@ const TABLES: TableLoad[] = [
   { name: "opex_budget_vs_actual", table: t.opexBudgetVsActual, pk: "opex_row_id", schema: s.opexBudgetVsActualSchema, expectedRows: 3_249 },
 ];
 
-// Keeps each INSERT well under Postgres' 65,535 bind-parameter limit (max 17 columns here).
+// Keeps each INSERT under SQLite's 32,766 bind-parameter limit (max 17 columns here).
 const BATCH_SIZE = 1_000;
 const MAX_ERROR_SAMPLES = 10;
 
@@ -61,7 +64,7 @@ async function loadTable(dir: string, spec: TableLoad) {
   const specs = columnSpecs(spec.table);
   const pkColumn = getTableColumns(spec.table)[spec.pk];
   const set = upsertSet(spec.table, spec.pk);
-  const file = path.join(dir, "G_finance", `${spec.name}.csv`);
+  const file = path.join(domainDir(dir, "G_finance"), `${spec.name}.csv`);
 
   let read = 0;
   let loaded = 0;
@@ -110,7 +113,10 @@ async function main() {
     throw new Error(`Unknown table in --tables. Valid: ${TABLES.map((x) => x.name).join(", ")}`);
   }
 
-  console.log(`Loading ${selected.length} table(s) from ${path.join(dir, "G_finance")}`);
+  console.log(`Database: ${databasePath()}`);
+  migrate(getDb(), { migrationsFolder: "drizzle" });
+
+  console.log(`Loading ${selected.length} table(s) from ${domainDir(dir, "G_finance")}`);
   const summary: Record<string, unknown>[] = [];
 
   for (const spec of selected) {
@@ -130,6 +136,12 @@ async function main() {
 
   console.table(summary);
   if (summary.some((r) => r.rejected !== 0)) process.exitCode = 1;
+
+  if (!only) {
+    console.log("Loading other domains");
+    const reserved = new Set([...TABLES.map((x) => x.name), "anomalies", "anomaly_explanations"]);
+    console.table(await loadOtherDomains(getDb().$client, dir, reserved));
+  }
 }
 
 main()

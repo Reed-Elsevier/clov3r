@@ -21,15 +21,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 The shared contract lives in `lib/`:
 
 - `lib/db/schema.ts` — Drizzle schema (9 `G_finance` dataset tables + `anomalies`, `anomaly_explanations`)
-- `lib/db/client.ts` — `getDb()` Postgres client (reads `DATABASE_URL`)
+- `lib/db/client.ts` — `getDb()` SQLite client (better-sqlite3; file at `DATABASE_PATH`, default `data/clov3r.db`)
 - `lib/schemas` — Zod schemas + TS types (`import { invoiceSchema, type Invoice } from "@/lib/schemas"`)
 - `lib/fixtures` — small mock rows/API payloads for building pages before real data lands
 
 Setup:
 
 ```bash
-cp .env.example .env.local   # then set DATABASE_URL
-npm run db:migrate           # apply drizzle/ migrations
+npm run data:load            # apply drizzle/ migrations and load ./datasets into SQLite
 ```
 
 After changing `lib/db/schema.ts`, run `npm run db:generate` to create a new

@@ -32,7 +32,7 @@ async function writeJson(path: string, payload: unknown) {
 async function main() {
   const { values } = parseArgs({ options: {
     source: { type: "string", default: "csv" },
-    dataset: { type: "string", default: "dataset/G_finance" },
+    dataset: { type: "string", default: "datasets/G_finance/G_finance" },
     "as-of": { type: "string" },
     config: { type: "string" },
     score: { type: "boolean", default: false },

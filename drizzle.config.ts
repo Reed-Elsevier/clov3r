@@ -3,12 +3,11 @@ import "./lib/db/load-env";
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
-  dialect: "postgresql",
+  dialect: "sqlite",
   schema: "./lib/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    // Only needed for `push`/`migrate`/`studio`; `generate` works offline.
-    url: process.env.DATABASE_URL ?? "",
+    url: process.env.DATABASE_PATH || "data/clov3r.db",
   },
   strict: true,
   verbose: true,

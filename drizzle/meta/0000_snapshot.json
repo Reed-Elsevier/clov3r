@@ -1,146 +1,108 @@
 {
-  "id": "490f740d-2d63-46f3-a234-a08af4b5ffad",
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "ff839358-a00b-4b5c-81c8-40c30affe8f2",
   "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "7",
-  "dialect": "postgresql",
   "tables": {
-    "public.anomalies": {
+    "anomalies": {
       "name": "anomalies",
-      "schema": "",
       "columns": {
         "anomaly_id": {
           "name": "anomaly_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "default": "gen_random_uuid()"
+          "autoincrement": false
         },
         "invoice_id": {
           "name": "invoice_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "method": {
           "name": "method",
-          "type": "anomaly_method",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "category": {
           "name": "category",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "priority": {
           "name": "priority",
-          "type": "anomaly_priority",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "score": {
           "name": "score",
-          "type": "double precision",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "evidence": {
           "name": "evidence",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "anomaly_status",
-          "typeSchema": "public",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false,
           "default": "'Needs review'"
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp with time zone",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
         }
       },
       "indexes": {
         "anomalies_invoice_method_category_uq": {
           "name": "anomalies_invoice_method_category_uq",
           "columns": [
-            {
-              "expression": "invoice_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "method",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "category",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "invoice_id",
+            "method",
+            "category"
           ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": true
         },
         "anomalies_status_idx": {
           "name": "anomalies_status_idx",
           "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "status"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "anomalies_priority_idx": {
           "name": "anomalies_priority_idx",
           "columns": [
-            {
-              "expression": "priority",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "priority"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "anomalies_category_idx": {
           "name": "anomalies_category_idx",
           "columns": [
-            {
-              "expression": "category",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "category"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -160,74 +122,80 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {
         "anomalies_evidence_is_object": {
           "name": "anomalies_evidence_is_object",
-          "value": "jsonb_typeof(\"anomalies\".\"evidence\") = 'object'"
+          "value": "json_type(\"anomalies\".\"evidence\") = 'object'"
         }
-      },
-      "isRLSEnabled": false
+      }
     },
-    "public.anomaly_explanations": {
+    "anomaly_explanations": {
       "name": "anomaly_explanations",
-      "schema": "",
       "columns": {
         "anomaly_id": {
           "name": "anomaly_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "explanation": {
           "name": "explanation",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "evidence_summary": {
           "name": "evidence_summary",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "potential_impact": {
           "name": "potential_impact",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "recommended_actions": {
           "name": "recommended_actions",
-          "type": "jsonb",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "preventive_measure": {
           "name": "preventive_measure",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "requires_human_review": {
           "name": "requires_human_review",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false,
           "default": true
         },
         "model_id": {
           "name": "model_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "generated_at": {
           "name": "generated_at",
-          "type": "timestamp with time zone",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
         }
       },
       "indexes": {},
@@ -248,135 +216,125 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {
         "anomaly_explanations_recommended_actions_is_array": {
           "name": "anomaly_explanations_recommended_actions_is_array",
-          "value": "jsonb_typeof(\"anomaly_explanations\".\"recommended_actions\") = 'array'"
+          "value": "json_type(\"anomaly_explanations\".\"recommended_actions\") = 'array'"
         }
-      },
-      "isRLSEnabled": false
+      }
     },
-    "public.cost_centers": {
+    "cost_centers": {
       "name": "cost_centers",
-      "schema": "",
       "columns": {
         "cost_center_id": {
           "name": "cost_center_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "department_id": {
           "name": "department_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "division_id": {
           "name": "division_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "cost_center_name": {
           "name": "cost_center_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "site_id": {
           "name": "site_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.invoice_exceptions": {
+    "invoice_exceptions": {
       "name": "invoice_exceptions",
-      "schema": "",
       "columns": {
         "exception_id": {
           "name": "exception_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "invoice_id": {
           "name": "invoice_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "exception_type": {
           "name": "exception_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "raised_at": {
           "name": "raised_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "resolved_at": {
           "name": "resolved_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "resolver_employee_id": {
           "name": "resolver_employee_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "resolution": {
           "name": "resolution",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
         "invoice_exceptions_invoice_id_idx": {
           "name": "invoice_exceptions_invoice_id_idx",
           "columns": [
-            {
-              "expression": "invoice_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "invoice_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "invoice_exceptions_exception_type_idx": {
           "name": "invoice_exceptions_exception_type_idx",
           "columns": [
-            {
-              "expression": "exception_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "exception_type"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -396,99 +354,89 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.invoice_lines": {
+    "invoice_lines": {
       "name": "invoice_lines",
-      "schema": "",
       "columns": {
         "invoice_line_id": {
           "name": "invoice_line_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "invoice_id": {
           "name": "invoice_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "line_no": {
           "name": "line_no",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "description": {
           "name": "description",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "quantity": {
           "name": "quantity",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "unit_price": {
           "name": "unit_price",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "line_amount": {
           "name": "line_amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "gl_account": {
           "name": "gl_account",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "cost_center_id": {
           "name": "cost_center_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "invoice_lines_invoice_id_idx": {
           "name": "invoice_lines_invoice_id_idx",
           "columns": [
-            {
-              "expression": "invoice_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "invoice_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "invoice_lines_cost_center_id_idx": {
           "name": "invoice_lines_cost_center_id_idx",
           "columns": [
-            {
-              "expression": "cost_center_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "cost_center_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -521,177 +469,159 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.invoices": {
+    "invoices": {
       "name": "invoices",
-      "schema": "",
       "columns": {
         "invoice_id": {
           "name": "invoice_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "supplier_id": {
           "name": "supplier_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "po_id": {
           "name": "po_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "invoice_date": {
           "name": "invoice_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "net_amount": {
           "name": "net_amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "tax_amount": {
           "name": "tax_amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "gross_amount": {
           "name": "gross_amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "amount_usd": {
           "name": "amount_usd",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "invoice_number": {
           "name": "invoice_number",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "received_at": {
           "name": "received_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "due_date": {
           "name": "due_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "approval_level": {
           "name": "approval_level",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "channel": {
           "name": "channel",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "ocr_confidence": {
           "name": "ocr_confidence",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "processor_employee_id": {
           "name": "processor_employee_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "invoices_supplier_id_idx": {
           "name": "invoices_supplier_id_idx",
           "columns": [
-            {
-              "expression": "supplier_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "supplier_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "invoices_po_id_idx": {
           "name": "invoices_po_id_idx",
           "columns": [
-            {
-              "expression": "po_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "po_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "invoices_invoice_date_idx": {
           "name": "invoices_invoice_date_idx",
           "columns": [
-            {
-              "expression": "invoice_date",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "invoice_date"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "invoices_status_idx": {
           "name": "invoices_status_idx",
           "columns": [
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "status"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -724,78 +654,75 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.opex_budget_vs_actual": {
+    "opex_budget_vs_actual": {
       "name": "opex_budget_vs_actual",
-      "schema": "",
       "columns": {
         "opex_row_id": {
           "name": "opex_row_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "cost_center_id": {
           "name": "cost_center_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "division_id": {
           "name": "division_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "month": {
           "name": "month",
           "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "budget_php": {
           "name": "budget_php",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "actual_php": {
           "name": "actual_php",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "variance_php": {
           "name": "variance_php",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "variance_pct": {
           "name": "variance_pct",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "opex_budget_vs_actual_cost_center_id_idx": {
           "name": "opex_budget_vs_actual_cost_center_id_idx",
           "columns": [
-            {
-              "expression": "cost_center_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "cost_center_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -815,78 +742,75 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.payments": {
+    "payments": {
       "name": "payments",
-      "schema": "",
       "columns": {
         "payment_id": {
           "name": "payment_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "invoice_id": {
           "name": "invoice_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "paid_at": {
           "name": "paid_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "amount": {
           "name": "amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "method": {
           "name": "method",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "payment_run_id": {
           "name": "payment_run_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "days_vs_due": {
           "name": "days_vs_due",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "payments_invoice_id_idx": {
           "name": "payments_invoice_id_idx",
           "columns": [
-            {
-              "expression": "invoice_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "invoice_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -906,99 +830,89 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.purchase_orders": {
+    "purchase_orders": {
       "name": "purchase_orders",
-      "schema": "",
       "columns": {
         "po_id": {
           "name": "po_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "supplier_id": {
           "name": "supplier_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "cost_center_id": {
           "name": "cost_center_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "requester_employee_id": {
           "name": "requester_employee_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "approver_employee_id": {
           "name": "approver_employee_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "po_date": {
           "name": "po_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "currency": {
           "name": "currency",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "po_amount": {
           "name": "po_amount",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "purchase_orders_supplier_id_idx": {
           "name": "purchase_orders_supplier_id_idx",
           "columns": [
-            {
-              "expression": "supplier_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "supplier_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         },
         "purchase_orders_cost_center_id_idx": {
           "name": "purchase_orders_cost_center_id_idx",
           "columns": [
-            {
-              "expression": "cost_center_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "cost_center_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1031,96 +945,96 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.supplier_enrollment_requests": {
+    "supplier_enrollment_requests": {
       "name": "supplier_enrollment_requests",
-      "schema": "",
       "columns": {
         "enrollment_request_id": {
           "name": "enrollment_request_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "supplier_id": {
           "name": "supplier_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "requested_by_employee_id": {
           "name": "requested_by_employee_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "submitted_at": {
           "name": "submitted_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "documents_complete_first_pass": {
           "name": "documents_complete_first_pass",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "tax_document_ok": {
           "name": "tax_document_ok",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "bank_details_ok": {
           "name": "bank_details_ok",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "sanctions_screen_ok": {
           "name": "sanctions_screen_ok",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "turnaround_days": {
           "name": "turnaround_days",
-          "type": "numeric",
+          "type": "real",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "decided_at": {
           "name": "decided_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
         "supplier_enrollment_requests_supplier_id_idx": {
           "name": "supplier_enrollment_requests_supplier_id_idx",
           "columns": [
-            {
-              "expression": "supplier_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
+            "supplier_id"
           ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
+          "isUnique": false
         }
       },
       "foreignKeys": {
@@ -1140,122 +1054,97 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     },
-    "public.suppliers": {
+    "suppliers": {
       "name": "suppliers",
-      "schema": "",
       "columns": {
         "supplier_id": {
           "name": "supplier_id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "entity_id": {
           "name": "entity_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "supplier_name": {
           "name": "supplier_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "category": {
           "name": "category",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "country": {
           "name": "country",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "payment_terms_days": {
           "name": "payment_terms_days",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "risk_tier": {
           "name": "risk_tier",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "preferred": {
           "name": "preferred",
-          "type": "boolean",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "onboarded_date": {
           "name": "onboarded_date",
           "type": "date",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         },
         "status": {
           "name": "status",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
+      "checkConstraints": {}
     }
   },
-  "enums": {
-    "public.anomaly_method": {
-      "name": "anomaly_method",
-      "schema": "public",
-      "values": [
-        "rule",
-        "statistical",
-        "isolation_forest"
-      ]
-    },
-    "public.anomaly_priority": {
-      "name": "anomaly_priority",
-      "schema": "public",
-      "values": [
-        "High",
-        "Medium",
-        "Low"
-      ]
-    },
-    "public.anomaly_status": {
-      "name": "anomaly_status",
-      "schema": "public",
-      "values": [
-        "Needs review",
-        "Investigating",
-        "Resolved",
-        "Dismissed"
-      ]
-    }
-  },
-  "schemas": {},
-  "sequences": {},
-  "roles": {},
-  "policies": {},
   "views": {},
+  "enums": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
   }
 }

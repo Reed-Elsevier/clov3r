@@ -11,7 +11,7 @@ export interface ExplanationStore {
   saveExplanation(row: AnomalyExplanation): Promise<AnomalyExplanation>;
 }
 
-/** Postgres `anomalies` / `anomaly_explanations` (lib/db/schema.ts). */
+/** SQLite `anomalies` / `anomaly_explanations` (lib/db/schema.ts). */
 export const dbStore: ExplanationStore = {
   async getAnomaly(anomalyId) {
     const [row] = await getDb().select().from(anomalies).where(eq(anomalies.anomaly_id, anomalyId)).limit(1);

@@ -55,7 +55,7 @@ From the repository root:
 ```powershell
 npm run test:detectors
 npm run anomalies:batch -- --source fixture --as-of 2026-10-08
-npm run anomalies:batch -- --source csv --dataset dataset/G_finance --as-of 2026-10-08 --report-out reports/anomalies/rules.json
+npm run anomalies:batch -- --source csv --dataset datasets/G_finance/G_finance --as-of 2026-10-08 --report-out reports/anomalies/rules.json
 npm run anomalies:batch -- --source db --as-of 2026-10-08 --persist
 ```
 

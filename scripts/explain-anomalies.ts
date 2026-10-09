@@ -6,7 +6,7 @@
  *   npm run ai:explain                                                          # then explain up to 50, highest priority first
  *   npm run ai:explain -- --limit 200
  *
- * Requires DATABASE_URL, BEDROCK_MODEL_ID and AWS credentials.
+ * Requires BEDROCK_MODEL_ID and AWS credentials; reads the SQLite file at DATABASE_PATH.
  */
 import "../lib/db/load-env";
 

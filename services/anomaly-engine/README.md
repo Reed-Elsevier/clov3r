@@ -53,7 +53,7 @@ Install Python 3.12, and use an isolated environment. `uv` is optional; ordinary
 ```powershell
 uv venv services/anomaly-engine/.venv --python 3.12
 uv pip install --python services/anomaly-engine/.venv/Scripts/python.exe -r services/anomaly-engine/requirements-dev.txt
-npm run anomalies:batch -- --source csv --dataset dataset/G_finance --as-of 2026-10-08 --features-out reports/anomalies/features.json
+npm run anomalies:batch -- --source csv --dataset datasets/G_finance/G_finance --as-of 2026-10-08 --features-out reports/anomalies/features.json
 services/anomaly-engine/.venv/Scripts/python.exe services/anomaly-engine/train.py --input reports/anomalies/features.json --output services/anomaly-engine/artifacts/isolation-forest.joblib
 $env:MODEL_PATH = (Resolve-Path services/anomaly-engine/artifacts/isolation-forest.joblib).Path
 services/anomaly-engine/.venv/Scripts/python.exe -m uvicorn main:app --app-dir services/anomaly-engine --host 127.0.0.1 --port 8000

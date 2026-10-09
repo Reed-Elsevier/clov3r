@@ -3,43 +3,36 @@
  *
  * The 9 G_finance tables mirror `dataset/_docs/03_data_dictionary.md` exactly
  * (column names, order and types) so `dataset/G_finance/*.csv` can be loaded
- * as-is. Type mapping:
+ * as-is into SQLite. Type mapping:
  *   string    -> text
  *   integer   -> integer
- *   decimal   -> numeric (unconstrained precision, exposed as JS number)
- *   boolean   -> boolean
- *   date      -> date      (exposed as 'YYYY-MM-DD' string)
- *   timestamp -> timestamp (no tz; dataset values are naive local times,
- *                           exposed as 'YYYY-MM-DD HH:MM:SS' string)
+ *   decimal   -> real
+ *   boolean   -> integer 0/1 (exposed as JS boolean)
+ *   date      -> date      (text affinity in practice; 'YYYY-MM-DD')
+ *   timestamp -> timestamp (naive local time; 'YYYY-MM-DD HH:MM:SS')
  *
  * Foreign keys *between* the 9 finance tables are enforced (the dataset's
  * validation report shows zero FK violations). References to tables outside
  * the v1 scope (departments, divisions, sites, business_entities, employees)
  * are plain text columns with no constraint.
  *
- * Categorical columns are `text` in Postgres (no DB enum) but typed in TS
- * via the shared value lists in `lib/schemas/enums.ts`.
+ * Categorical columns are plain `text` but typed in TS via the shared value
+ * lists in `lib/schemas/enums.ts`.
  *
  * Relative imports only: this file is also loaded by drizzle-kit outside of
  * the Next.js/tsconfig path-alias resolver.
  */
 import { sql } from "drizzle-orm";
 import {
-  boolean,
   check,
-  date,
-  doublePrecision,
+  customType,
   index,
   integer,
-  jsonb,
-  numeric,
-  pgEnum,
-  pgTable,
+  real,
+  sqliteTable,
   text,
-  timestamp,
   uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 
 import {
   ANOMALY_METHODS,
@@ -59,15 +52,18 @@ import {
   SUPPLIER_STATUSES,
 } from "../schemas/enums";
 
-const decimal = () => numeric({ mode: "number" });
-const datasetDate = () => date({ mode: "string" });
-const datasetTimestamp = () => timestamp({ mode: "string" });
+const decimal = () => real();
+const boolean = () => integer({ mode: "boolean" });
+// Declared SQL types let lib/ingestion/convert.ts tell dates from timestamps.
+const datasetDate = customType<{ data: string; driverData: string }>({ dataType: () => "date" });
+const datasetTimestamp = customType<{ data: string; driverData: string }>({ dataType: () => "timestamp" });
+const nowIso = sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`;
 
 // ---------------------------------------------------------------------------
 // G_finance dataset tables
 // ---------------------------------------------------------------------------
 
-export const costCenters = pgTable("cost_centers", {
+export const costCenters = sqliteTable("cost_centers", {
   cost_center_id: text().primaryKey(),
   department_id: text().notNull(),
   division_id: text().notNull(),
@@ -75,7 +71,7 @@ export const costCenters = pgTable("cost_centers", {
   site_id: text().notNull(),
 });
 
-export const suppliers = pgTable("suppliers", {
+export const suppliers = sqliteTable("suppliers", {
   supplier_id: text().primaryKey(),
   entity_id: text().notNull(),
   supplier_name: text().notNull(),
@@ -88,7 +84,7 @@ export const suppliers = pgTable("suppliers", {
   status: text({ enum: SUPPLIER_STATUSES }).notNull(),
 });
 
-export const supplierEnrollmentRequests = pgTable(
+export const supplierEnrollmentRequests = sqliteTable(
   "supplier_enrollment_requests",
   {
     enrollment_request_id: text().primaryKey(),
@@ -108,7 +104,7 @@ export const supplierEnrollmentRequests = pgTable(
   (t) => [index("supplier_enrollment_requests_supplier_id_idx").on(t.supplier_id)],
 );
 
-export const purchaseOrders = pgTable(
+export const purchaseOrders = sqliteTable(
   "purchase_orders",
   {
     po_id: text().primaryKey(),
@@ -131,7 +127,7 @@ export const purchaseOrders = pgTable(
   ],
 );
 
-export const invoices = pgTable(
+export const invoices = sqliteTable(
   "invoices",
   {
     invoice_id: text().primaryKey(),
@@ -162,7 +158,7 @@ export const invoices = pgTable(
   ],
 );
 
-export const invoiceLines = pgTable(
+export const invoiceLines = sqliteTable(
   "invoice_lines",
   {
     invoice_line_id: text().primaryKey(),
@@ -185,7 +181,7 @@ export const invoiceLines = pgTable(
   ],
 );
 
-export const invoiceExceptions = pgTable(
+export const invoiceExceptions = sqliteTable(
   "invoice_exceptions",
   {
     exception_id: text().primaryKey(),
@@ -204,7 +200,7 @@ export const invoiceExceptions = pgTable(
   ],
 );
 
-export const payments = pgTable(
+export const payments = sqliteTable(
   "payments",
   {
     payment_id: text().primaryKey(),
@@ -221,7 +217,7 @@ export const payments = pgTable(
   (t) => [index("payments_invoice_id_idx").on(t.invoice_id)],
 );
 
-export const opexBudgetVsActual = pgTable(
+export const opexBudgetVsActual = sqliteTable(
   "opex_budget_vs_actual",
   {
     opex_row_id: text().primaryKey(),
@@ -242,29 +238,25 @@ export const opexBudgetVsActual = pgTable(
 // App-native tables
 // ---------------------------------------------------------------------------
 
-export const anomalyMethodEnum = pgEnum("anomaly_method", ANOMALY_METHODS);
-export const anomalyPriorityEnum = pgEnum("anomaly_priority", ANOMALY_PRIORITIES);
-export const anomalyStatusEnum = pgEnum("anomaly_status", ANOMALY_STATUSES);
-
 /** Freeform per-category evidence; see `lib/schemas/anomalies.ts` for keys. */
 export type AnomalyEvidence = Record<string, unknown>;
 
-export const anomalies = pgTable(
+export const anomalies = sqliteTable(
   "anomalies",
   {
-    anomaly_id: uuid().primaryKey().defaultRandom(),
+    anomaly_id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     invoice_id: text()
       .notNull()
       .references(() => invoices.invoice_id, { onDelete: "cascade" }),
-    method: anomalyMethodEnum().notNull(),
+    method: text({ enum: ANOMALY_METHODS }).notNull(),
     category: text().notNull(),
-    priority: anomalyPriorityEnum().notNull(),
-    score: doublePrecision(),
-    evidence: jsonb().$type<AnomalyEvidence>().notNull(),
-    status: anomalyStatusEnum().notNull().default("Needs review"),
-    created_at: timestamp({ withTimezone: true, mode: "string" })
-      .notNull()
-      .defaultNow(),
+    priority: text({ enum: ANOMALY_PRIORITIES }).notNull(),
+    score: real(),
+    evidence: text({ mode: "json" }).$type<AnomalyEvidence>().notNull(),
+    status: text({ enum: ANOMALY_STATUSES }).notNull().default("Needs review"),
+    created_at: text().notNull().default(nowIso),
   },
   (t) => [
     // One row per (invoice, detector method, category) so detector re-runs can upsert.
@@ -278,32 +270,30 @@ export const anomalies = pgTable(
     index("anomalies_category_idx").on(t.category),
     check(
       "anomalies_evidence_is_object",
-      sql`jsonb_typeof(${t.evidence}) = 'object'`,
+      sql`json_type(${t.evidence}) = 'object'`,
     ),
   ],
 );
 
-export const anomalyExplanations = pgTable(
+export const anomalyExplanations = sqliteTable(
   "anomaly_explanations",
   {
-    anomaly_id: uuid()
+    anomaly_id: text()
       .primaryKey()
       .references(() => anomalies.anomaly_id, { onDelete: "cascade" }),
     explanation: text().notNull(),
     evidence_summary: text().notNull(),
     potential_impact: text().notNull(),
-    recommended_actions: jsonb().$type<string[]>().notNull(),
+    recommended_actions: text({ mode: "json" }).$type<string[]>().notNull(),
     preventive_measure: text().notNull(),
     requires_human_review: boolean().notNull().default(true),
     model_id: text().notNull(),
-    generated_at: timestamp({ withTimezone: true, mode: "string" })
-      .notNull()
-      .defaultNow(),
+    generated_at: text().notNull().default(nowIso),
   },
   (t) => [
     check(
       "anomaly_explanations_recommended_actions_is_array",
-      sql`jsonb_typeof(${t.recommended_actions}) = 'array'`,
+      sql`json_type(${t.recommended_actions}) = 'array'`,
     ),
   ],
 );
