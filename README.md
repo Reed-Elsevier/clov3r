@@ -16,6 +16,27 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Database & data contract
+
+The shared contract lives in `lib/`:
+
+- `lib/db/schema.ts` — Drizzle schema (9 `G_finance` dataset tables + `anomalies`, `anomaly_explanations`)
+- `lib/db/client.ts` — `getDb()` Postgres client (reads `DATABASE_URL`)
+- `lib/schemas` — Zod schemas + TS types (`import { invoiceSchema, type Invoice } from "@/lib/schemas"`)
+- `lib/fixtures` — small mock rows/API payloads for building pages before real data lands
+
+Setup:
+
+```bash
+cp .env.example .env.local   # then set DATABASE_URL
+npm run db:migrate           # apply drizzle/ migrations
+```
+
+After changing `lib/db/schema.ts`, run `npm run db:generate` to create a new
+migration, update the matching Zod schema, and run `npm run typecheck` (it fails
+if the Zod and Drizzle types drift apart). Loading the dataset is covered in
+`scripts/load-dataset/README.md`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
