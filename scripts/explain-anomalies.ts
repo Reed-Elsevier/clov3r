@@ -2,7 +2,8 @@
  * Batch-generates AI explanations for anomalies that don't have one yet
  * (PLAN-05 note: run after detection, not on dashboard page load).
  *
- *   npm run ai:explain                 # up to 50 anomalies, highest priority first
+ *   npm run anomalies:batch -- --source db --as-of <date> --persist [--score]   # PLAN-03/04 detection
+ *   npm run ai:explain                                                          # then explain up to 50, highest priority first
  *   npm run ai:explain -- --limit 200
  *
  * Requires DATABASE_URL, BEDROCK_MODEL_ID and AWS credentials.

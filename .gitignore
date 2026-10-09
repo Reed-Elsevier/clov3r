@@ -43,3 +43,10 @@ next-env.d.ts
 
 /dataset
 /scripts/load-dataset/out/
+
+**/.venv/
+**/.terraform/
+**/__pycache__/
+*.pyc
+/services/anomaly-engine/artifacts/
+/reports/anomalies/

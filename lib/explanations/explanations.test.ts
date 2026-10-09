@@ -1,13 +1,161 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildExplainPrompt, parseExplanationOutput } from "../bedrock/prompts/explain-anomaly";
-import { mockAnomalies, mockAnomalyExplanations } from "../fixtures";
-import { mockOutput, verifyOutput } from "./generate";
+import { buildExplainPrompt, parseExplanationOutput, promptFacts } from "../bedrock/prompts/explain-anomaly";
+import { runRules } from "../detectors/batch";
+import type { RelatedRows } from "../detectors/context";
+import { detectUnusualVendorTransaction } from "../detectors/rules";
+import {
+  mockAnomalies,
+  mockAnomalyExplanations,
+  mockInvoiceExceptions,
+  mockInvoiceLines,
+  mockInvoices,
+  mockPayments,
+  mockPurchaseOrders,
+} from "../fixtures";
+import { anomalyExplanationSchema, type Anomaly, type AnomalyExplanation } from "../schemas";
+import { ExplanationRejectedError, generateExplanation, mockOutput, verifyOutput } from "./generate";
+import { explainAnomaly } from "./service";
+import type { ExplanationStore } from "./store";
 import { extractClaims, verifyNumbers } from "./verify";
 
 const highAmount = mockAnomalies.find((a) => a.category === "Unusually high amount")!;
 const duplicate = mockAnomalies.find((a) => a.category === "Duplicate invoice")!;
+
+const AS_OF = "2026-10-08";
+const detected = runRules(
+  {
+    invoices: mockInvoices,
+    invoiceLines: mockInvoiceLines,
+    purchaseOrders: mockPurchaseOrders,
+    payments: mockPayments,
+    invoiceExceptions: mockInvoiceExceptions,
+  },
+  AS_OF,
+);
+
+const vendorContext: RelatedRows = {
+  asOfDate: AS_OF,
+  candidates: [],
+  lines: [],
+  payments: [],
+  vendorAvgUsd: 28_560,
+  vendorInvoiceCount: 5,
+  poInvoicedTotal: null,
+  isFinalPoInvoice: false,
+};
+const vendor = detectUnusualVendorTransaction(mockInvoices.find((i) => i.invoice_id === "INV9000005")!, vendorContext)!;
+
+const reply = (output: Record<string, unknown>) =>
+  JSON.stringify({
+    explanation: "x",
+    evidenceSummary: "y",
+    potentialImpact: "z",
+    recommendedActions: ["Verify with the supplier."],
+    preventiveMeasure: "p",
+    requiresHumanReview: true,
+    ...output,
+  });
+
+describe("with PLAN-03 detector output", () => {
+  it("detectors produced findings to explain", () => {
+    assert.ok(detected.length > 0);
+    assert.equal(vendor.category, "Unusual vendor transaction");
+  });
+
+  it("sends only facts the model is allowed to see for every detector finding", () => {
+    for (const a of [...detected, vendor]) {
+      const { user } = buildExplainPrompt(a);
+      const facts = JSON.parse(user.slice(user.indexOf("{"), user.lastIndexOf("}") + 1));
+      assert.deepEqual(Object.keys(facts).sort(), ["category", "detectionMethod", "evidence", "score", "scoreMeaning"]);
+      assert.doesNotMatch(user, /Mock (Cloud|Content|Facilities)|EMP9/, a.category);
+    }
+  });
+
+  it("offline template passes the cross-check for every detector finding", () => {
+    for (const a of [...detected, vendor]) assert.equal(verifyOutput(mockOutput(a), a).ok, true, a.category);
+  });
+
+  it("grounded vendor explanation passes; an invented figure is caught", () => {
+    const grounded = {
+      explanation: "USD 120,960 is about 4.2 times this supplier's earlier average of USD 28,560 across 5 prior invoices, above the 3x review setting.",
+      evidenceSummary: "Amount USD 120,960; supplier average USD 28,560; ratio 4.24.",
+      potentialImpact: "If the amount is wrong, USD 120,960 could be paid without review.",
+      recommendedActions: ["Confirm the quantity and price with the requester.", "Check the purchase order balance."],
+      preventiveMeasure: "Route invoices far above a supplier's usual amount to an extra approval step.",
+      requiresHumanReview: true,
+    };
+    assert.deepEqual(verifyOutput(grounded, vendor), { ok: true, unsupported: [] });
+    const invented = { ...grounded, potentialImpact: "This could be an overpayment of USD 92,400." };
+    assert.deepEqual(verifyOutput(invented, vendor).unsupported, ["92,400"]);
+  });
+
+  it("caps long evidence arrays and verifies against exactly what the model saw", () => {
+    const lines = Array.from({ length: 12 }, (_, i) => ({ invoiceLineId: `L${i}`, lineAmount: 100 + i }));
+    const input = { category: "Price/quantity mismatch", method: "rule" as const, score: null, evidence: { summary: "s", inconsistentLines: lines } };
+    const facts = promptFacts(input);
+    assert.equal((facts.evidence.inconsistentLines as unknown[]).length, 10);
+    assert.equal(facts.evidence.inconsistentLinesTotalCount, 12);
+    assert.equal(verifyOutput(JSON.parse(reply({ explanation: "12 lines do not reconcile." })), input).ok, true);
+    assert.equal(verifyOutput(JSON.parse(reply({ explanation: "Line amount 111 differs." })), input).ok, false);
+  });
+});
+
+describe("generateExplanation with a stubbed model", () => {
+  const anomaly = { ...vendor, anomaly_id: "6f1c2b8e-3d4a-4c5b-9e7f-0a1b2c3d4eff" };
+
+  it("retries once with feedback after an invented figure, then stores the grounded answer", async () => {
+    const prompts: string[] = [];
+    const replies = [
+      reply({ explanation: "Overpayment of USD 92,400 is likely.", requiresHumanReview: false }),
+      reply({ explanation: "USD 120,960 is about 4.2 times the supplier average.", requiresHumanReview: false }),
+    ];
+    const row = await generateExplanation(anomaly, {
+      modelId: "test-model",
+      converse: async ({ user }) => {
+        prompts.push(user);
+        return replies.shift()!;
+      },
+    });
+    assert.equal(prompts.length, 2);
+    assert.match(prompts[1], /previous answer was rejected: .*92,400/);
+    assert.equal(row.model_id, "test-model");
+    assert.equal(row.requires_human_review, true);
+    assert.equal(anomalyExplanationSchema.safeParse(row).success, true);
+  });
+
+  it("rejects after two unsupported or malformed replies", async () => {
+    const replies = ["not json", reply({ explanation: "A 37% increase." })];
+    await assert.rejects(
+      generateExplanation(anomaly, { modelId: "test-model", converse: async () => replies.shift()! }),
+      (err: unknown) => err instanceof ExplanationRejectedError && err.reasons.length === 2,
+    );
+  });
+});
+
+describe("explainAnomaly service", () => {
+  it("is idempotent unless regenerate is requested, and returns schema-valid rows", async () => {
+    delete process.env.BEDROCK_MODEL_ID;
+    const a: Anomaly = { ...vendor, anomaly_id: "6f1c2b8e-3d4a-4c5b-9e7f-0a1b2c3d4eaa", status: "Needs review", created_at: "2026-10-08 02:00:00+00" };
+    const saved = new Map<string, AnomalyExplanation>();
+    const store: ExplanationStore = {
+      getAnomaly: async (id) => (id === a.anomaly_id ? a : null),
+      getExplanation: async (id) => saved.get(id) ?? null,
+      saveExplanation: async (row) => {
+        saved.set(row.anomaly_id, row);
+        return row;
+      },
+    };
+
+    const first = await explainAnomaly(a.anomaly_id, { store });
+    const second = await explainAnomaly(a.anomaly_id, { store });
+    const third = await explainAnomaly(a.anomaly_id, { store, regenerate: true });
+    assert.deepEqual([first?.generated, second?.generated, third?.generated], [true, false, true]);
+    assert.equal(anomalyExplanationSchema.safeParse(first?.explanation).success, true);
+    assert.equal(await explainAnomaly("6f1c2b8e-3d4a-4c5b-9e7f-0a1b2c3d4e00", { store }), null);
+  });
+});
 
 describe("extractClaims", () => {
   it("reads amounts, decimals, percents and suffixes but skips identifiers", () => {
@@ -59,7 +207,7 @@ describe("explain-anomaly prompt", () => {
   it("sends only category, method, score and evidence", () => {
     const { system, user } = buildExplainPrompt(highAmount);
     const facts = JSON.parse(user.slice(user.indexOf("{"), user.lastIndexOf("}") + 1));
-    assert.deepEqual(Object.keys(facts).sort(), ["category", "detectionMethod", "evidence", "score"]);
+    assert.deepEqual(Object.keys(facts).sort(), ["category", "detectionMethod", "evidence", "score", "scoreMeaning"]);
     assert.equal(facts.score, 4.2);
     assert.match(system, /Never claim or imply fraud/);
     assert.doesNotMatch(user, /INV9000005|Mock Cloud Software/);

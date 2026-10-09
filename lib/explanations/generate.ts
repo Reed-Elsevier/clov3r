@@ -2,6 +2,7 @@ import { bedrockModelId, converse } from "@/lib/bedrock/client";
 import {
   buildExplainPrompt,
   parseExplanationOutput,
+  promptFacts,
   type ExplainInput,
   type ExplanationOutput,
 } from "@/lib/bedrock/prompts/explain-anomaly";
@@ -27,7 +28,7 @@ export function verifyOutput(output: ExplanationOutput, input: ExplainInput) {
     output.preventiveMeasure,
     ...output.recommendedActions,
   ];
-  return verifyNumbers(texts, input.evidence, input.score === null ? [] : [input.score]);
+  return verifyNumbers(texts, promptFacts(input).evidence, input.score === null ? [] : [input.score]);
 }
 
 function toRow(anomalyId: string, output: ExplanationOutput, modelId: string): AnomalyExplanation {
@@ -62,13 +63,23 @@ export function mockOutput(input: ExplainInput): ExplanationOutput {
   };
 }
 
+export interface GenerateDeps {
+  modelId: string | null;
+  converse: (prompt: { system: string; user: string }) => Promise<string>;
+}
+
+const defaultDeps = (): GenerateDeps => ({ modelId: bedrockModelId(), converse });
+
 /**
  * Generates a structured explanation for one anomaly (PLAN-05). Uses Bedrock
  * when `BEDROCK_MODEL_ID` is set, otherwise a labelled offline template. Model
  * output is schema-validated and numerically cross-checked against the
  * evidence; one retry with feedback is allowed before rejecting.
  */
-export async function generateExplanation(anomaly: Anomaly): Promise<AnomalyExplanation> {
+export async function generateExplanation(
+  anomaly: Pick<Anomaly, "anomaly_id"> & ExplainInput,
+  deps: GenerateDeps = defaultDeps(),
+): Promise<AnomalyExplanation> {
   const input: ExplainInput = {
     category: anomaly.category,
     method: anomaly.method,
@@ -76,14 +87,13 @@ export async function generateExplanation(anomaly: Anomaly): Promise<AnomalyExpl
     evidence: anomaly.evidence,
   };
 
-  const modelId = bedrockModelId();
+  const { modelId } = deps;
   if (!modelId) return toRow(anomaly.anomaly_id, mockOutput(input), MOCK_MODEL_ID);
 
   const reasons: string[] = [];
   let feedback: string | undefined;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const { system, user } = buildExplainPrompt(input, feedback);
-    const parsed = parseExplanationOutput(await converse({ system, user }));
+    const parsed = parseExplanationOutput(await deps.converse(buildExplainPrompt(input, feedback)));
     if (!parsed.success) {
       feedback = `it did not match the required JSON format (${parsed.error})`;
       reasons.push(feedback);

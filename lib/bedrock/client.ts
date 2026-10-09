@@ -1,3 +1,4 @@
+import "server-only";
 import { BedrockRuntimeClient, ConverseCommand } from "@aws-sdk/client-bedrock-runtime";
 
 let client: BedrockRuntimeClient | undefined;
